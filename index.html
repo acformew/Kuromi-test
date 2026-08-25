@@ -158,17 +158,16 @@
         .logo-img-right { display: none; }
 
         button.trade-nav-btn.logo-img-left {
-            all: unset;
+            position: relative;
             box-sizing: border-box;
-            width: 100%;
-            height: auto;
+            width: calc(100% - 20px);
+            margin: 2px 10px 4px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             gap: 5px;
             padding: 9px 4px 8px;
-            margin: 2px 0 4px;
             border-radius: var(--r-md);
             border: 1px solid transparent;
             background: none;
@@ -405,11 +404,9 @@
             background: rgba(255, 255, 255, 0.06);
         }
         .widget-avatar {
-            width: 32px;
-            height: 32px;
+            width: 34px;
+            height: 34px;
             border-radius: 8px;
-            image-rendering: pixelated;
-            border: 1px solid rgba(255, 255, 255, 0.08);
             flex-shrink: 0;
         }
         .widget-name {
@@ -471,13 +468,15 @@
             box-shadow: none;
             backdrop-filter: none;
             -webkit-backdrop-filter: none;
+            position: relative;
+            z-index: 3;
         }
         .hero-panel:hover { border-color: transparent; }
         .hero-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1.15fr 0.85fr;
             align-items: center;
-            gap: 24px;
+            gap: 40px;
             width: 100%;
             padding: 28px 0 56px;
         }
@@ -522,13 +521,13 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            height: 100%;
-            min-height: 520px;
+            height: 300px;
             overflow: visible;
+            z-index: 4;
         }
         .hero-visual-img {
             position: relative;
-            width: 480px;
+            width: 460px;
             max-width: 100%;
             height: auto;
             object-fit: contain;
@@ -536,8 +535,8 @@
         }
         .hero-visual-glow {
             position: absolute;
-            width: 460px; height: 460px; border-radius: 50%;
-            background: radial-gradient(circle, rgba(138,43,226,0.18), transparent 70%);
+            width: 320px; height: 320px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(138,43,226,0.16), transparent 70%);
             filter: blur(20px); z-index: -1;
         }
 
@@ -923,7 +922,7 @@
             flex-shrink: 0;
             display: inline-flex;
         }
-        .profile-avatar-ring img { display: block; border-radius: 10px; image-rendering: pixelated; }
+        .profile-avatar-ring img { display: block; border-radius: 10px; }
 
         .profile-banner-card {
             position: relative;
@@ -1102,7 +1101,7 @@
         .forum-post-card { position: relative; overflow: hidden; }
         .forum-post-card > *:not(.icon-pattern-layer) { position: relative; z-index: 1; }
 
-        .player-head-render { width: 56px; height: 56px; border-radius: 8px; image-rendering: pixelated; background: rgba(255,255,255,0.02); flex-shrink: 0; }
+        .player-head-render { width: 56px; height: 56px; border-radius: 10px; flex-shrink: 0; }
         .player-card-info { text-align: left; overflow: hidden; width: 100%; }
         .player-card-info h3 { font-size: 1.05rem; font-weight: 600; margin-bottom: 4px; }
         .player-card-meta { display: flex; gap: 12px; font-size: 0.8rem; color: var(--text-muted); flex-wrap: nowrap; }
@@ -1203,7 +1202,7 @@
         .wiki-tip [data-lucide] { width: 17px; height: 17px; color: #b985f4; flex-shrink: 0; margin-top: 1px; }
         .wiki-tip b { color: #fff; }
 
-        /* ===== Вики — GitBook-style layout: сайдбар с деревом страниц + контент справа ===== */
+        /* ===== Вики — GitBook-style layout: сайдбар с деревом страниц + контент + оглавление ===== */
         .wiki-layout {
             display: flex;
             width: 100%;
@@ -1212,55 +1211,90 @@
             border-radius: var(--r-xl);
             overflow: hidden;
             background: var(--surface-1);
+            align-items: stretch;
         }
         .wiki-sidebar {
-            width: 268px;
+            width: 260px;
             flex-shrink: 0;
             background: rgba(255, 255, 255, 0.02);
             border-right: 1px solid var(--line-soft);
-            padding: 18px 14px;
+            padding: 16px 12px;
             overflow-y: auto;
         }
         .wiki-search {
             display: flex;
             align-items: center;
             gap: 8px;
+            width: 100%;
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid var(--line-soft);
             border-radius: var(--r-md);
-            padding: 9px 12px;
+            padding: 9px 10px 9px 12px;
             margin-bottom: 16px;
+            cursor: text;
+            transition: border-color 0.15s var(--ease);
         }
+        .wiki-search:focus-within { border-color: rgba(138,43,226,0.45); }
         .wiki-search [data-lucide] { width: 15px; height: 15px; color: var(--text-muted); flex-shrink: 0; }
         .wiki-search input {
             background: none; border: none; outline: none; color: #fff;
             font-family: var(--font-sans); font-size: 0.82rem; width: 100%;
         }
         .wiki-search input::placeholder { color: var(--text-muted); }
-        .wiki-nav-group { margin-bottom: 18px; }
+        .wiki-search-kbd {
+            font-size: 0.62rem; font-weight: 700; color: var(--text-muted);
+            background: rgba(255,255,255,0.05); border: 1px solid var(--line-soft);
+            border-radius: 5px; padding: 2px 6px; flex-shrink: 0;
+        }
+        .wiki-nav-group { margin-bottom: 4px; }
+        .wiki-nav-group-header {
+            display: flex; align-items: center; gap: 6px;
+            padding: 7px 8px; margin-bottom: 2px; cursor: pointer; user-select: none;
+            border-radius: 8px; transition: background 0.15s var(--ease);
+        }
+        .wiki-nav-group-header:hover { background: rgba(255,255,255,0.03); }
+        .wiki-nav-group-header [data-lucide] {
+            width: 13px; height: 13px; color: var(--text-muted);
+            transition: transform 0.18s var(--ease); flex-shrink: 0;
+        }
+        .wiki-nav-group.collapsed .wiki-nav-group-header [data-lucide] { transform: rotate(-90deg); }
         .wiki-nav-group-title {
             font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
-            color: var(--text-muted); padding: 0 10px; margin-bottom: 6px;
+            color: var(--text-muted);
         }
+        .wiki-nav-group-items { display: flex; flex-direction: column; gap: 1px; margin-bottom: 14px; }
+        .wiki-nav-group.collapsed .wiki-nav-group-items { display: none; }
         .wiki-nav-item {
+            position: relative;
             display: flex; align-items: center; gap: 10px;
-            padding: 8px 10px; border-radius: 10px; cursor: pointer;
-            color: var(--text-muted); font-size: 0.84rem; font-weight: 500;
+            padding: 7px 10px 7px 22px; border-radius: 8px; cursor: pointer;
+            color: var(--text-muted); font-size: 0.83rem; font-weight: 500;
             transition: all 0.15s var(--ease);
         }
         .wiki-nav-item [data-lucide] { width: 15px; height: 15px; flex-shrink: 0; color: inherit; }
         .wiki-nav-item:hover { color: #fff; background: rgba(255,255,255,0.04); }
         .wiki-nav-item.active {
             color: #fff;
-            background: rgba(138, 43, 226, 0.16);
+            background: rgba(138, 43, 226, 0.14);
+        }
+        .wiki-nav-item.active::before {
+            content: '';
+            position: absolute; left: 8px; top: 50%; transform: translateY(-50%);
+            width: 3px; height: 14px; border-radius: var(--r-full);
+            background: var(--primary-purple);
         }
         .wiki-nav-item.active [data-lucide] { color: #b985f4; }
+
         .wiki-content {
             flex: 1;
             min-width: 0;
-            padding: 34px 40px;
+            padding: 32px 44px;
             overflow-y: auto;
             max-height: 640px;
+        }
+        .wiki-breadcrumb {
+            font-size: 0.76rem; font-weight: 600; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px;
         }
         .wiki-content-header {
             display: flex; align-items: center; gap: 14px;
@@ -1269,10 +1303,64 @@
         }
         .wiki-content-header h2 { font-family: var(--font-sans); font-size: 1.3rem; font-weight: 700; color: #fff; }
         .wiki-page-body { padding: 0; font-size: 0.94rem; }
+        .wiki-page-body h4 { scroll-margin-top: 20px; }
+
+        .wiki-card-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+            margin: 18px 0 6px;
+        }
+        .wiki-card {
+            background: rgba(255,255,255,0.02); border: 1px solid var(--line-soft);
+            border-radius: 14px; padding: 16px 14px; cursor: pointer;
+            transition: all 0.18s var(--ease);
+        }
+        .wiki-card:hover { border-color: rgba(138,43,226,0.4); background: rgba(138,43,226,0.06); transform: translateY(-2px); }
+        .wiki-card .icon-badge { margin-bottom: 10px; }
+        .wiki-card h5 { font-size: 0.88rem; font-weight: 700; color: #fff; margin: 0; }
+
+        .wiki-page-nav {
+            display: flex; justify-content: space-between; gap: 12px;
+            margin-top: 32px; padding-top: 18px; border-top: 1px solid var(--line-soft);
+        }
+        .wiki-page-nav-btn {
+            display: flex; flex-direction: column; gap: 4px; max-width: 48%;
+            padding: 10px 14px; border-radius: 12px; border: 1px solid var(--line-soft);
+            background: rgba(255,255,255,0.02); cursor: pointer; transition: all 0.15s var(--ease);
+        }
+        .wiki-page-nav-btn:hover { border-color: rgba(138,43,226,0.4); background: rgba(138,43,226,0.06); }
+        .wiki-page-nav-btn.next { margin-left: auto; text-align: right; align-items: flex-end; }
+        .wiki-page-nav-label { font-size: 0.66rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; display: flex; align-items: center; gap: 4px; }
+        .wiki-page-nav-label [data-lucide] { width: 12px; height: 12px; }
+        .wiki-page-nav-title { font-size: 0.84rem; font-weight: 600; color: #fff; }
+
+        .wiki-toc {
+            width: 210px;
+            flex-shrink: 0;
+            padding: 32px 20px;
+            border-left: 1px solid var(--line-soft);
+            overflow-y: auto;
+        }
+        .wiki-toc-title {
+            font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+            color: var(--text-muted); margin-bottom: 12px;
+        }
+        .wiki-toc a {
+            display: block; padding: 5px 0; color: var(--text-muted); font-size: 0.8rem;
+            text-decoration: none; border-left: 2px solid transparent; padding-left: 10px;
+            transition: all 0.15s var(--ease);
+        }
+        .wiki-toc a:hover { color: #fff; }
+        .wiki-toc a.active { color: #b985f4; border-left-color: #b985f4; }
+        .wiki-toc:empty, .wiki-toc-title:has(+ nav:empty) { display: none; }
+
+        @media (max-width: 1180px) {
+            .wiki-toc { display: none; }
+        }
         @media (max-width: 900px) {
             .wiki-layout { flex-direction: column; min-height: 0; }
             .wiki-sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--line-soft); max-height: 260px; }
             .wiki-content { max-height: none; padding: 24px 22px; }
+            .wiki-card-grid { grid-template-columns: 1fr; }
         }
 
         .mechanic-img-box {
@@ -1764,7 +1852,7 @@
             transition: background 0.15s ease, border-color 0.15s ease;
         }
         .bm-chat-list-item:hover { background: rgba(138,43,226,0.08); border-color: rgba(138,43,226,0.22); }
-        .bm-chat-list-item img { width: 46px; height: 46px; border-radius: 12px; flex-shrink: 0; background: rgba(255,255,255,0.04); }
+        .bm-chat-list-item img { width: 46px; height: 46px; border-radius: 12px; flex-shrink: 0; }
         .bm-chat-list-item .info { min-width: 0; flex: 1; }
         .bm-chat-list-item .name { font-size: 0.88rem; font-weight: 700; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .bm-chat-list-item .item { font-size: 0.76rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
@@ -2819,20 +2907,28 @@
 
                 <div class="wiki-layout">
                     <aside class="wiki-sidebar">
-                        <div class="wiki-search">
+                        <button class="wiki-search" id="wiki-search-btn" onclick="focusWikiSearch()">
                             <i data-lucide="search"></i>
-                            <input type="text" id="wiki-search-input" placeholder="Поиск по вики..." oninput="filterWikiSidebar(this.value)">
-                        </div>
+                            <input type="text" id="wiki-search-input" placeholder="Поиск по вики..." oninput="filterWikiSidebar(this.value)" onclick="event.stopPropagation()">
+                            <span class="wiki-search-kbd">Ctrl K</span>
+                        </button>
                         <nav id="wiki-sidebar-nav" class="wiki-sidebar-nav"></nav>
                     </aside>
 
                     <div class="wiki-content" id="wiki-content">
+                        <div class="wiki-breadcrumb" id="wiki-breadcrumb"></div>
                         <div class="wiki-content-header">
                             <span class="icon-badge b-purple" id="wiki-page-icon" style="width:36px;height:36px;"><i data-lucide="book-open"></i></span>
                             <h2 id="wiki-page-title">Загрузка...</h2>
                         </div>
                         <div class="wiki-modal-body wiki-page-body" id="wiki-page-body"></div>
+                        <div class="wiki-page-nav" id="wiki-page-nav"></div>
                     </div>
+
+                    <aside class="wiki-toc" id="wiki-toc-wrap">
+                        <div class="wiki-toc-title">На этой странице</div>
+                        <nav id="wiki-toc"></nav>
+                    </aside>
                 </div>
             </div>
         </div>
@@ -3529,18 +3625,28 @@ async function loadSectionVisibility() {
                 icon: 'info', color: 'purple',
                 title: 'Главная информация',
                 body: `
-                    <div class="wiki-tip"><i data-lucide="info"></i><div>KuromiSMP — это приватный полуванильный сервер с упором на социальное взаимодействие игроков, ролевые фракции и авторские механики.</div></div>
+                    <div class="wiki-tip"><i data-lucide="info"></i><div><b>KuromiSMP</b> — это приватный полуванильный сервер с упором на социальное взаимодействие игроков, ролевые фракции и авторские механики.</div></div>
                     <h4><i data-lucide="list-ordered"></i> С чего начать</h4>
                     <ul>
                         <li>Загляните в раздел «Доступ», чтобы узнать, как попасть на сервер.</li>
-                        <li>Изучите регламент сообщества ниже в этой вики — так вы избежите случайных наказаний.</li>
+                        <li>Изучите регламент сообщества — так вы избежите случайных наказаний.</li>
                         <li>Прочитайте статьи о механиках сервера: аресте, торговой федерации, масках и других фишках.</li>
                     </ul>
-                    <h4><i data-lucide="compass"></i> Разделы вики</h4>
-                    <ul>
-                        <li><b>Общая информация</b> — правила и базовые принципы сервера.</li>
-                        <li><b>Механики сервера</b> — подробный разбор всех авторских систем KuromiSMP.</li>
-                    </ul>
+                    <h4><i data-lucide="compass"></i> Выберите интересующий раздел</h4>
+                    <div class="wiki-card-grid">
+                        <div class="wiki-card" onclick="openWikiPage('rule-property')">
+                            <span class="icon-badge b-purple" style="width:32px;height:32px;"><i data-lucide="scroll-text"></i></span>
+                            <h5>Регламент сообщества</h5>
+                        </div>
+                        <div class="wiki-card" onclick="openWikiPage('blackmarket')">
+                            <span class="icon-badge b-purple" style="width:32px;height:32px;"><i data-lucide="store"></i></span>
+                            <h5>Торговая федерация</h5>
+                        </div>
+                        <div class="wiki-card" onclick="openWikiPage('arrest')">
+                            <span class="icon-badge b-purple" style="width:32px;height:32px;"><i data-lucide="link-2"></i></span>
+                            <h5>Арест и конвоирование</h5>
+                        </div>
+                    </div>
                 `
             },
             'rule-property': {
@@ -3646,21 +3752,43 @@ async function loadSectionVisibility() {
 
         let wikiInitialized = false;
         let currentWikiKey = null;
+        let wikiCollapsedGroups = new Set();
+
+        function wikiFlatList() {
+            return WIKI_STRUCTURE.flatMap(g => g.items.map(item => ({ ...item, group: g.group })));
+        }
 
         function renderWikiSidebar() {
             const nav = document.getElementById('wiki-sidebar-nav');
             if (!nav) return;
-            nav.innerHTML = WIKI_STRUCTURE.map(group => `
-                <div class="wiki-nav-group">
-                    <div class="wiki-nav-group-title">${group.group}</div>
-                    ${group.items.map(item => `
-                        <div class="wiki-nav-item" data-wiki-key="${item.key}" data-wiki-search="${item.title.toLowerCase()}" onclick="openWikiPage('${item.key}')">
-                            <i data-lucide="${item.icon}"></i><span>${item.title}</span>
-                        </div>
-                    `).join('')}
+            nav.innerHTML = WIKI_STRUCTURE.map((group, gi) => `
+                <div class="wiki-nav-group" data-group-index="${gi}">
+                    <div class="wiki-nav-group-header" onclick="toggleWikiGroup(${gi})">
+                        <i data-lucide="chevron-down"></i>
+                        <span class="wiki-nav-group-title">${group.group}</span>
+                    </div>
+                    <div class="wiki-nav-group-items">
+                        ${group.items.map(item => `
+                            <div class="wiki-nav-item" data-wiki-key="${item.key}" data-wiki-search="${item.title.toLowerCase()}" onclick="openWikiPage('${item.key}')">
+                                <i data-lucide="${item.icon}"></i><span>${item.title}</span>
+                            </div>
+                        `).join('')}
+                    </div>
                 </div>
             `).join('');
             if (window.lucide) lucide.createIcons();
+        }
+
+        function toggleWikiGroup(index) {
+            const group = document.querySelector(`.wiki-nav-group[data-group-index="${index}"]`);
+            if (!group) return;
+            group.classList.toggle('collapsed');
+            if (group.classList.contains('collapsed')) wikiCollapsedGroups.add(index);
+            else wikiCollapsedGroups.delete(index);
+        }
+
+        function focusWikiSearch() {
+            document.getElementById('wiki-search-input').focus();
         }
 
         function openWikiPage(key) {
@@ -3668,6 +3796,11 @@ async function loadSectionVisibility() {
             if (!article) return;
             currentWikiKey = key;
 
+            const flat = wikiFlatList();
+            const idx = flat.findIndex(i => i.key === key);
+            const groupName = flat[idx] ? flat[idx].group : '';
+
+            document.getElementById('wiki-breadcrumb').textContent = groupName;
             document.getElementById('wiki-page-title').textContent = article.title;
             document.getElementById('wiki-page-body').innerHTML = article.body;
 
@@ -3679,9 +3812,46 @@ async function loadSectionVisibility() {
                 el.classList.toggle('active', el.dataset.wikiKey === key);
             });
 
+            renderWikiToc();
+            renderWikiPageNav(idx, flat);
+
             const content = document.getElementById('wiki-content');
             if (content) content.scrollTop = 0;
 
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function renderWikiToc() {
+            const body = document.getElementById('wiki-page-body');
+            const tocNav = document.getElementById('wiki-toc');
+            const tocWrap = document.getElementById('wiki-toc-wrap');
+            if (!body || !tocNav) return;
+            const headings = Array.from(body.querySelectorAll('h4'));
+            if (headings.length === 0) {
+                tocNav.innerHTML = '';
+                if (tocWrap) tocWrap.style.display = 'none';
+                return;
+            }
+            if (tocWrap) tocWrap.style.display = '';
+            headings.forEach((h, i) => { h.id = h.id || `wiki-heading-${i}`; });
+            tocNav.innerHTML = headings.map(h => `<a href="#${h.id}" onclick="event.preventDefault(); document.getElementById('${h.id}').scrollIntoView({behavior:'smooth', block:'start'});">${h.textContent}</a>`).join('');
+        }
+
+        function renderWikiPageNav(idx, flat) {
+            const wrap = document.getElementById('wiki-page-nav');
+            if (!wrap) return;
+            const prev = flat[idx - 1];
+            const next = flat[idx + 1];
+            wrap.innerHTML = `
+                ${prev ? `<div class="wiki-page-nav-btn prev" onclick="openWikiPage('${prev.key}')">
+                    <div class="wiki-page-nav-label"><i data-lucide="arrow-left"></i> Назад</div>
+                    <div class="wiki-page-nav-title">${prev.title}</div>
+                </div>` : '<div></div>'}
+                ${next ? `<div class="wiki-page-nav-btn next" onclick="openWikiPage('${next.key}')">
+                    <div class="wiki-page-nav-label">Далее <i data-lucide="arrow-right"></i></div>
+                    <div class="wiki-page-nav-title">${next.title}</div>
+                </div>` : ''}
+            `;
             if (window.lucide) lucide.createIcons();
         }
 
@@ -3693,6 +3863,7 @@ async function loadSectionVisibility() {
             document.querySelectorAll('.wiki-nav-group').forEach(g => {
                 const anyVisible = Array.from(g.querySelectorAll('.wiki-nav-item')).some(el => el.style.display !== 'none');
                 g.style.display = anyVisible ? 'block' : 'none';
+                if (q && anyVisible) g.classList.remove('collapsed');
             });
         }
 
@@ -3702,6 +3873,16 @@ async function loadSectionVisibility() {
             renderWikiSidebar();
             openWikiPage('welcome');
         }
+
+        window.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+                const section = document.getElementById('section-mechanics');
+                if (section && section.classList.contains('active')) {
+                    e.preventDefault();
+                    focusWikiSearch();
+                }
+            }
+        });
 
         async function submitServerApplication() {
             const nick = document.getElementById('app-mc-nick').value.trim();
@@ -4027,7 +4208,7 @@ async function loadSectionVisibility() {
                 <div class="bounty-card market" onclick="bmOpenListingDetail('${l.id}')">
                     ${buildIconPatternLayer(['package', 'gem', 'handshake'], { count: 40, size: 13, density: 'soft' })}
                     <div class="bounty-info">
-                        <img src="https://mc-heads.net/avatar/${l.seller_name}/48" alt="${l.seller_name}" class="player-head-render" width="48" height="48" style="background: rgba(255,255,255,0.04);">
+                        <img src="https://mc-heads.net/avatar/${l.seller_name}/96" alt="${l.seller_name}" class="player-head-render" width="48" height="48">
                         <div class="bounty-meta">
                             <h4>${l.item_name}</h4>
                             <span>Продавец: ${l.seller_name}</span>
@@ -4217,7 +4398,7 @@ async function loadSectionVisibility() {
                 <div class="bounty-card job" onclick="bmOpenJobDetail('${j.id}')">
                     ${buildIconPatternLayer(['hammer', 'wrench', 'hard-hat'], { count: 40, size: 13, density: 'soft' })}
                     <div class="bounty-info">
-                        <img src="https://mc-heads.net/avatar/${j.employer_name}/48" alt="${j.employer_name}" class="player-head-render" width="48" height="48" style="background: rgba(255,255,255,0.04);">
+                        <img src="https://mc-heads.net/avatar/${j.employer_name}/96" alt="${j.employer_name}" class="player-head-render" width="48" height="48">
                         <div class="bounty-meta">
                             <h4>${j.title}</h4>
                             <span>Заказчик: ${j.employer_name}</span>
@@ -4429,7 +4610,7 @@ async function loadSectionVisibility() {
             const meta = bmActiveChatMeta;
             const otherName = meta?.otherName || 'собеседник';
             document.getElementById('bm-chat-other-name').textContent = otherName;
-            document.getElementById('bm-chat-avatar').src = `https://mc-heads.net/avatar/${encodeURIComponent(otherName)}/48`;
+            document.getElementById('bm-chat-avatar').src = `https://mc-heads.net/avatar/${encodeURIComponent(otherName)}/96`;
 
             const roleLabels = { seller: 'Вы продавец лота', buyer: 'Вы покупатель лота', employer: 'Вы заказчик вакансии', hired: 'Вы исполнитель вакансии', applicant: 'Вы откликнулись на вакансию' };
             document.getElementById('bm-chat-role-label').textContent = meta?.myRole ? roleLabels[meta.myRole] : 'Сделка в Торговой федерации';
@@ -4695,7 +4876,7 @@ async function loadSectionVisibility() {
             }
             list.innerHTML = chats.map(c => `
                 <div class="bm-chat-list-item" onclick="bmOpenChatFromDrawer('${c.contextType}','${c.contextId}','${escapeHtml(c.otherName)}')">
-                    <img src="https://mc-heads.net/avatar/${encodeURIComponent(c.otherName)}/40" alt="${escapeHtml(c.otherName)}">
+                    <img src="https://mc-heads.net/avatar/${encodeURIComponent(c.otherName)}/80" alt="${escapeHtml(c.otherName)}">
                     <div class="info">
                         <div class="name">${escapeHtml(c.otherName)}</div>
                         <div class="item">${escapeHtml(c.itemName)}</div>
@@ -6058,7 +6239,7 @@ async function loadSectionVisibility() {
                             ₽ <span id="ruble-balance-display">${currentRubBalance}</span>
                         </div>
                     </div>
-                    <div class="widget-user-card" onclick="switchTab('profile')"><img src="https://mc-heads.net/avatar/${linkedData.minecraft_name}/44" class="widget-avatar"><div class="widget-name">${linkedData.minecraft_name}</div></div>`;
+                    <div class="widget-user-card" onclick="switchTab('profile')"><img src="https://mc-heads.net/avatar/${linkedData.minecraft_name}/68" class="widget-avatar"><div class="widget-name">${linkedData.minecraft_name}</div></div>`;
                 
                 loadWalletBalance(linkedData.minecraft_uuid);
                 updateForumForm();
@@ -6185,7 +6366,7 @@ async function loadSectionVisibility() {
                 if (!el || !el.parentElement) return;
                 const img = document.createElement('img');
                 img.src = `https://mc-heads.net/player/${minecraftName}/${height}`;
-                img.style.cssText = `image-rendering:pixelated; height:${height}px; width:auto; filter: drop-shadow(0 8px 12px rgba(0,0,0,0.35));`;
+                img.style.cssText = `height:${height}px; width:auto; filter: drop-shadow(0 8px 12px rgba(0,0,0,0.35));`;
                 el.replaceWith(img);
             };
 
@@ -6537,10 +6718,10 @@ async function loadSectionVisibility() {
                 const bgSize = Math.round(64 * scale);
                 const pos = -Math.round(8 * scale);
                 return `<div style="width:${size}px; height:${size}px; border-radius:${radius}px; overflow:hidden; position:relative; background:#c68958;">
-                    <div style="position:absolute; inset:0; image-rendering:pixelated; background-image:url('${textureUrl}'); background-repeat:no-repeat; background-size:${bgSize}px ${bgSize}px; background-position:${pos}px ${pos}px;"></div>
+                    <div style="position:absolute; inset:0; background-image:url('${textureUrl}'); background-repeat:no-repeat; background-size:${bgSize}px ${bgSize}px; background-position:${pos}px ${pos}px;"></div>
                 </div>`;
             }
-            return `<img src="https://mc-heads.net/avatar/${name}/${size}" alt="${name}" width="${size}" height="${size}" style="image-rendering:pixelated; border-radius:${radius}px; display:block;">`;
+            return `<img src="https://mc-heads.net/avatar/${name}/${size}" alt="${name}" width="${size}" height="${size}" style="border-radius:${radius}px; display:block;">`;
         }
 
         // ===== Фоновая текстура из нескольких иконок Lucide =====
@@ -7656,7 +7837,7 @@ function switchTab(tabName) {
                     return `
                         <div style="display: flex; gap: 12px; background: rgba(0, 0, 0, 0.15); padding: 12px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.02); align-items: flex-start; margin-bottom: 8px;">
                             <div class="profile-avatar-ring" style="--pf-accent: ${commAccent}; padding: 2px; border-radius: 8px; cursor: pointer; flex-shrink: 0;" onclick="openPlayerModal('${comm.minecraft_uuid}', '${comm.minecraft_name}')">
-                                <img src="https://mc-heads.net/avatar/${comm.minecraft_name}/24" style="width: 24px; height: 24px; image-rendering: pixelated; border-radius: 6px; display:block;">
+                                <img src="https://mc-heads.net/avatar/${comm.minecraft_name}/48" style="width: 24px; height: 24px; border-radius: 6px; display:block;">
                             </div>
                             <div style="display: flex; flex-direction: column; text-align: left; width: 100%; overflow: hidden;">
                                 <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; width: 100%;">
@@ -7726,7 +7907,7 @@ function switchTab(tabName) {
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px;">
                         <div style="display: flex; align-items: center; gap: 14px;">
                             <div class="profile-avatar-ring" style="--pf-accent: ${authorAccent}; padding: 2px; border-radius: 10px; cursor: pointer; flex-shrink: 0;" onclick="openPlayerModal('${post.minecraft_uuid}', '${post.minecraft_name}')">
-                                <img src="https://mc-heads.net/avatar/${post.minecraft_name}/36" style="width: 36px; height: 36px; image-rendering: pixelated; border-radius: 8px; display:block;">
+                                <img src="https://mc-heads.net/avatar/${post.minecraft_name}/72" style="width: 36px; height: 36px; border-radius: 8px; display:block;">
                             </div>
                             <div>
                                 <h4 style="font-size: 0.98rem; font-weight: 600; color: #fff; cursor: pointer;" onclick="openPlayerModal('${post.minecraft_uuid}', '${post.minecraft_name}')">${post.minecraft_name}</h4>
@@ -8828,7 +9009,7 @@ async function saveSectionVisibility(key, value) {
                     balanceBox.innerHTML = rows.length ? rows.map((p, i) => `
                         <div class="leaderboard-row">
                             <div class="leaderboard-rank">${i + 1}</div>
-                            <img src="https://mc-heads.net/avatar/${nameMap[p.minecraft_uuid].minecraft_name}/28" style="width:28px;height:28px;border-radius:6px;image-rendering:pixelated;">
+                            <img src="https://mc-heads.net/avatar/${nameMap[p.minecraft_uuid].minecraft_name}/56" style="width:28px;height:28px;border-radius:6px;">
                             <div style="flex:1; font-weight:600; font-size:0.88rem;">${escapeHtml(nameMap[p.minecraft_uuid].minecraft_name)}</div>
                             <div style="font-weight:700; color:#ffb95c;">${p.currency_balance ?? 0}</div>
                         </div>`).join('') : `<div style="color:var(--text-muted); padding:10px;">Нет данных</div>`;
@@ -8841,7 +9022,7 @@ async function saveSectionVisibility(key, value) {
                     killsBox.innerHTML = rows.length ? rows.map((p, i) => `
                         <div class="leaderboard-row">
                             <div class="leaderboard-rank">${i + 1}</div>
-                            <img src="https://mc-heads.net/avatar/${nameMap[p.minecraft_uuid].minecraft_name}/28" style="width:28px;height:28px;border-radius:6px;image-rendering:pixelated;">
+                            <img src="https://mc-heads.net/avatar/${nameMap[p.minecraft_uuid].minecraft_name}/56" style="width:28px;height:28px;border-radius:6px;">
                             <div style="flex:1; font-weight:600; font-size:0.88rem;">${escapeHtml(nameMap[p.minecraft_uuid].minecraft_name)}</div>
                             <div style="font-weight:700; color:#ff7b6e;">${p.kills ?? 0}</div>
                         </div>`).join('') : `<div style="color:var(--text-muted); padding:10px;">Нет данных</div>`;
@@ -8906,7 +9087,7 @@ async function saveSectionVisibility(key, value) {
             resultBox.innerHTML = `
                 <div class="admin-card" style="margin-top:4px;">
                     <div class="admin-row-head">
-                        <img src="https://mc-heads.net/avatar/${player.minecraft_name}/56" style="width:56px;height:56px;border-radius:12px;image-rendering:pixelated;">
+                        <img src="https://mc-heads.net/avatar/${player.minecraft_name}/112" style="width:56px;height:56px;border-radius:12px;">
                         <div class="grow">
                             <div style="font-size:1.15rem; font-weight:700;">${escapeHtml(player.minecraft_name)}</div>
                             <div style="font-size:0.8rem; color:var(--text-muted);">Discord ID: ${escapeHtml(player.discord_id)} ${player.user_id ? '' : '· <span style="color:#ffb95c;">профиль сайта ещё не найден</span>'}</div>
