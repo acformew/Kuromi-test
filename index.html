@@ -168,14 +168,14 @@
             justify-content: center;
             gap: 5px;
             padding: 9px 4px 8px;
-            margin: 2px 0 6px;
+            margin: 2px 0 4px;
             border-radius: var(--r-md);
-            border: 1px solid var(--line-soft);
-            background: rgba(255, 0, 127, 0.05);
+            border: 1px solid transparent;
+            background: none;
             color: var(--text-muted);
             font-family: var(--font-sans);
             font-size: 0.58rem;
-            font-weight: 700;
+            font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.02em;
             text-align: center;
@@ -184,9 +184,8 @@
         }
         button.trade-nav-btn.logo-img-left [data-lucide] { width: 18px; height: 18px; }
         button.trade-nav-btn.logo-img-left:hover {
-            color: #fff;
-            border-color: rgba(255, 0, 127, 0.4);
-            background: rgba(255, 0, 127, 0.12);
+            color: var(--text-main);
+            background: rgba(255,255,255,0.04);
         }
 
         nav {
@@ -337,11 +336,11 @@
 
         /* Всплывающие тосты о новых уведомлениях — растут вверх над кнопкой-колокольчиком */
         #bm-toast-container {
-            position: fixed; right: 24px; bottom: 92px; z-index: 19000;
+            position: fixed; right: 24px; bottom: 160px; z-index: 19000;
             display: flex; flex-direction: column-reverse; gap: 10px; width: 320px; max-width: calc(100vw - 32px);
             pointer-events: none;
         }
-        @media (max-width: 640px) { #bm-toast-container { right: 16px; bottom: 78px; } }
+        @media (max-width: 640px) { #bm-toast-container { right: 16px; bottom: 140px; } }
         .bm-toast {
             pointer-events: auto; cursor: pointer;
             background: rgba(16, 11, 28, 0.98); border: 1px solid rgba(138, 43, 226, 0.35);
@@ -476,9 +475,9 @@
         .hero-panel:hover { border-color: transparent; }
         .hero-grid {
             display: grid;
-            grid-template-columns: 1.15fr 0.85fr;
+            grid-template-columns: 1fr 1fr;
             align-items: center;
-            gap: 40px;
+            gap: 24px;
             width: 100%;
             padding: 28px 0 56px;
         }
@@ -524,12 +523,12 @@
             align-items: center;
             justify-content: center;
             height: 100%;
-            min-height: 340px;
+            min-height: 520px;
             overflow: visible;
         }
         .hero-visual-img {
             position: relative;
-            width: 260px;
+            width: 480px;
             max-width: 100%;
             height: auto;
             object-fit: contain;
@@ -537,8 +536,8 @@
         }
         .hero-visual-glow {
             position: absolute;
-            width: 320px; height: 320px; border-radius: 50%;
-            background: radial-gradient(circle, rgba(138,43,226,0.16), transparent 70%);
+            width: 460px; height: 460px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(138,43,226,0.18), transparent 70%);
             filter: blur(20px); z-index: -1;
         }
 
@@ -668,8 +667,8 @@
             .hero-grid { grid-template-columns: 1fr; padding: 36px 26px; }
             .hero-copy { align-items: center; text-align: center; }
             .hero-meta-row, .features-line, .cta-group { justify-content: center; }
-            .hero-visual { order: -1; min-height: 160px; }
-            .hero-visual-img { width: 160px; }
+            .hero-visual { order: -1; min-height: 280px; }
+            .hero-visual-img { width: 280px; }
         }
 
         .panel-title {
@@ -1203,6 +1202,79 @@
         }
         .wiki-tip [data-lucide] { width: 17px; height: 17px; color: #b985f4; flex-shrink: 0; margin-top: 1px; }
         .wiki-tip b { color: #fff; }
+
+        /* ===== Вики — GitBook-style layout: сайдбар с деревом страниц + контент справа ===== */
+        .wiki-layout {
+            display: flex;
+            width: 100%;
+            min-height: 640px;
+            border: 1px solid var(--line-soft);
+            border-radius: var(--r-xl);
+            overflow: hidden;
+            background: var(--surface-1);
+        }
+        .wiki-sidebar {
+            width: 268px;
+            flex-shrink: 0;
+            background: rgba(255, 255, 255, 0.02);
+            border-right: 1px solid var(--line-soft);
+            padding: 18px 14px;
+            overflow-y: auto;
+        }
+        .wiki-search {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--line-soft);
+            border-radius: var(--r-md);
+            padding: 9px 12px;
+            margin-bottom: 16px;
+        }
+        .wiki-search [data-lucide] { width: 15px; height: 15px; color: var(--text-muted); flex-shrink: 0; }
+        .wiki-search input {
+            background: none; border: none; outline: none; color: #fff;
+            font-family: var(--font-sans); font-size: 0.82rem; width: 100%;
+        }
+        .wiki-search input::placeholder { color: var(--text-muted); }
+        .wiki-nav-group { margin-bottom: 18px; }
+        .wiki-nav-group-title {
+            font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+            color: var(--text-muted); padding: 0 10px; margin-bottom: 6px;
+        }
+        .wiki-nav-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px 10px; border-radius: 10px; cursor: pointer;
+            color: var(--text-muted); font-size: 0.84rem; font-weight: 500;
+            transition: all 0.15s var(--ease);
+        }
+        .wiki-nav-item [data-lucide] { width: 15px; height: 15px; flex-shrink: 0; color: inherit; }
+        .wiki-nav-item:hover { color: #fff; background: rgba(255,255,255,0.04); }
+        .wiki-nav-item.active {
+            color: #fff;
+            background: rgba(138, 43, 226, 0.16);
+        }
+        .wiki-nav-item.active [data-lucide] { color: #b985f4; }
+        .wiki-content {
+            flex: 1;
+            min-width: 0;
+            padding: 34px 40px;
+            overflow-y: auto;
+            max-height: 640px;
+        }
+        .wiki-content-header {
+            display: flex; align-items: center; gap: 14px;
+            margin-bottom: 22px; padding-bottom: 18px;
+            border-bottom: 1px solid var(--line-soft);
+        }
+        .wiki-content-header h2 { font-family: var(--font-sans); font-size: 1.3rem; font-weight: 700; color: #fff; }
+        .wiki-page-body { padding: 0; font-size: 0.94rem; }
+        @media (max-width: 900px) {
+            .wiki-layout { flex-direction: column; min-height: 0; }
+            .wiki-sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--line-soft); max-height: 260px; }
+            .wiki-content { max-height: none; padding: 24px 22px; }
+        }
+
         .mechanic-img-box {
             width: 44px;
             height: 44px;
@@ -1655,22 +1727,24 @@
         #bm-chat-input:focus { border-color: var(--accent-pink); }
         #bm-chat-send { background: var(--accent-pink); border: none; border-radius: 12px; padding: 0 16px; color: #fff; cursor: pointer; }
 
-        /* ===== Плавающая вкладка "Чаты продаж" слева экрана ===== */
+        /* ===== Плавающая круглая кнопка "Чаты продаж" — справа снизу, над колокольчиком уведомлений ===== */
         #bm-chats-tab {
-            position: fixed; left: 0; top: 50%; transform: translateY(-50%);
-            z-index: 18000; display: none; align-items: center; gap: 8px;
-            background: rgba(16,11,28,0.92); color: #fff; border: 1px solid rgba(138,43,226,0.28); border-left: none; cursor: pointer;
-            padding: 18px 14px 18px 11px; border-radius: 0 16px 16px 0;
-            box-shadow: 4px 6px 22px rgba(0,0,0,0.35);
-            writing-mode: vertical-rl; text-orientation: mixed; font-family: var(--font-sans); font-weight: 700; font-size: 0.82rem; letter-spacing: 0.03em;
-            transition: padding 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+            position: fixed; right: 24px; bottom: 92px; z-index: 18000;
+            width: 56px; height: 56px; border-radius: 50%; border: none; cursor: pointer; display: none;
+            background: rgba(20, 17, 28, 0.9); border: 1px solid rgba(138,43,226,0.32);
+            align-items: center; justify-content: center;
+            box-shadow: 0 10px 26px rgba(0,0,0,0.35);
+            transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
         }
-        #bm-chats-tab:hover { padding-left: 15px; border-color: rgba(138,43,226,0.55); background: rgba(24,16,40,0.96); }
-        #bm-chats-tab [data-lucide] { width: 16px; height: 16px; transform: rotate(90deg); color: #b985f4; }
+        #bm-chats-tab:hover { transform: translateY(-3px) scale(1.05); border-color: rgba(138,43,226,0.6); box-shadow: 0 14px 32px rgba(0,0,0,0.4); }
+        #bm-chats-tab [data-lucide] { width: 22px; height: 22px; color: #b985f4; }
         #bm-chats-tab .bm-chats-tab-badge {
-            writing-mode: horizontal-tb; background: var(--accent-pink); color: #fff; font-size: 0.68rem; font-weight: 800;
-            min-width: 17px; height: 17px; padding: 0 4px; border-radius: 100px; display: flex; align-items: center; justify-content: center;
+            position: absolute; top: -3px; right: -3px;
+            background: var(--accent-pink); color: #fff; font-size: 0.68rem; font-weight: 800;
+            min-width: 20px; height: 20px; padding: 0 5px; border-radius: 100px; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 0 3px #0a0710;
         }
+        @media (max-width: 640px) { #bm-chats-tab { right: 16px; bottom: 78px; width: 50px; height: 50px; } }
         #bm-chats-drawer-overlay {
             display: none; position: fixed; inset: 0; z-index: 18500; background: rgba(3,2,6,0.6); backdrop-filter: blur(4px);
         }
@@ -2741,67 +2815,23 @@
                 <div class="panel-title" style="text-align: left; width: 100%; display:flex; align-items:center; gap:10px;">
                     <span class="icon-badge b-purple" style="width:32px;height:32px;"><i data-lucide="book-open"></i></span> Вики сервера
                 </div>
-                <div class="eyebrow" style="margin-bottom: 30px; text-align: left; width: 100%;">Разбираем все механики, системы и фишки KuromiSMP</div>
+                <div class="eyebrow" style="margin-bottom: 24px; text-align: left; width: 100%;">Разбираем все механики, системы и фишки KuromiSMP</div>
 
-                <div class="panel-title" style="font-size: 1.3rem; text-align: left; width: 100%; color: #fff; border-bottom: 1px solid rgba(138,43,226,0.12); padding-bottom: 10px; margin-bottom: 20px; display:flex; align-items:center; gap:10px;">
-                    <span class="icon-badge b-purple" style="width:28px;height:28px;"><i data-lucide="scroll-text"></i></span> Регламент сообщества
-                </div>
-                <div class="rule-node">
-                    <h3>01. Имущество и постройки</h3>
-                    <p>Любое несанкционированное изменение ландшафта, присвоение чужих ресурсов из сундуков, гриферство или разрушение чужих строений караются вечным баном. Все действия логируются на сервере.</p>
-                </div>
-                <div class="rule-node">
-                    <h3>02. Модификации игрового процесса</h3>
-                    <p>Запрещено использование чит-клиентов, текстур-паков типа X-Ray, скриптов, макросов или любых сторонних программ, дающих несправедливое превосходство в игровом процессе.</p>
-                </div>
-                <div class="rule-node" style="margin-bottom: 36px;">
-                    <h3>03. Взаимодействие в чате</h3>
-                    <p>Запрещен намеренный токсичный прессинг участников, деструктивное поведение, разжигание конфликтов и спам. Мы развиваем взрослое и комфортное комьюнити.</p>
-                </div>
+                <div class="wiki-layout">
+                    <aside class="wiki-sidebar">
+                        <div class="wiki-search">
+                            <i data-lucide="search"></i>
+                            <input type="text" id="wiki-search-input" placeholder="Поиск по вики..." oninput="filterWikiSidebar(this.value)">
+                        </div>
+                        <nav id="wiki-sidebar-nav" class="wiki-sidebar-nav"></nav>
+                    </aside>
 
-                <div class="panel-title" style="font-size: 1.3rem; text-align: left; width: 100%; color: #fff; border-bottom: 1px solid rgba(138,43,226,0.12); padding-bottom: 10px; margin-bottom: 20px; display:flex; align-items:center; gap:10px;">
-                    <span class="icon-badge b-purple" style="width:28px;height:28px;"><i data-lucide="sparkles"></i></span> Механики сервера
-                </div>
-                <div class="mechanics-grid">
-                    <div class="mechanic-card" onclick="openWikiArticle('arrest')">
-                        <div class="mechanic-img-box"><div class="mechanic-placeholder-icon"><i data-lucide="link-2"></i></div></div>
-                        <div class="mechanic-text-block">
-                            <h3>Арест и Конвоирование</h3>
-                            <p>Ролевая система задержания нарушителей. Позволяет временно заковать игрока в наручники и конвоировать его за собой на РП-поводке до выяснения обстоятельства администрацией.</p>
+                    <div class="wiki-content" id="wiki-content">
+                        <div class="wiki-content-header">
+                            <span class="icon-badge b-purple" id="wiki-page-icon" style="width:36px;height:36px;"><i data-lucide="book-open"></i></span>
+                            <h2 id="wiki-page-title">Загрузка...</h2>
                         </div>
-                        <div class="mechanic-more">Подробнее <i data-lucide="arrow-right"></i></div>
-                    </div>
-                    <div class="mechanic-card" onclick="openWikiArticle('blackmarket')">
-                        <div class="mechanic-img-box"><div class="mechanic-placeholder-icon"><i data-lucide="store"></i></div></div>
-                        <div class="mechanic-text-block">
-                            <h3>Торговая федерация</h3>
-                            <p>Внутриигровой рынок сервера с гарантом сделки: площадка для купли-продажи предметов за игровую валюту и биржа разовых вакансий между игроками.</p>
-                        </div>
-                        <div class="mechanic-more">Подробнее <i data-lucide="arrow-right"></i></div>
-                    </div>
-                    <div class="mechanic-card" onclick="openWikiArticle('mask')">
-                        <div class="mechanic-img-box"><div class="mechanic-placeholder-icon"><i data-lucide="venetian-mask"></i></div></div>
-                        <div class="mechanic-text-block">
-                            <h3>Анонимные маски</h3>
-                            <p>Маскировка личности на базе текстурированных тыкв. При экипировке предмета игровой никнейм в табе и над головой полностью подменяется, обеспечивая безопасность тайных сделок.</p>
-                        </div>
-                        <div class="mechanic-more">Подробнее <i data-lucide="arrow-right"></i></div>
-                    </div>
-                    <div class="mechanic-card" onclick="openWikiArticle('newspaper')">
-                        <div class="mechanic-img-box"><div class="mechanic-placeholder-icon"><i data-lucide="newspaper"></i></div></div>
-                        <div class="mechanic-text-block">
-                            <h3>Газета Kuromi Times</h3>
-                            <p>Информационный вестник сервера. Люгой житель SMP может отправить свою статью или расследование через форму на сайте. Публикация происходит после модерации редакцией.</p>
-                        </div>
-                        <div class="mechanic-more">Подробнее <i data-lucide="arrow-right"></i></div>
-                    </div>
-                    <div class="mechanic-card" onclick="openWikiArticle('death')">
-                        <div class="mechanic-img-box"><div class="mechanic-placeholder-icon"><i data-lucide="skull"></i></div></div>
-                        <div class="mechanic-text-block">
-                            <h3>Кастомная смерть</h3>
-                            <p>Косметическая кастомизация логов убийств. Генерирует в чате уникальные текстовые маркеры и спавнит густые ведьминские частицы дыма в точке вашей гибели.</p>
-                        </div>
-                        <div class="mechanic-more">Подробнее <i data-lucide="arrow-right"></i></div>
+                        <div class="wiki-modal-body wiki-page-body" id="wiki-page-body"></div>
                     </div>
                 </div>
             </div>
@@ -3233,17 +3263,6 @@
         </div>
     </div>
 
-    <div id="wiki-modal-overlay">
-        <div id="wiki-modal-card">
-            <div class="wiki-modal-header">
-                <span class="icon-badge b-purple" id="wiki-modal-icon" style="width:40px;height:40px;"><i data-lucide="book-open"></i></span>
-                <h3 id="wiki-modal-title">Заголовок статьи</h3>
-                <div class="wiki-modal-close" onclick="closeWikiArticle()"><i data-lucide="x"></i></div>
-            </div>
-            <div class="wiki-modal-body" id="wiki-modal-body"></div>
-        </div>
-    </div>
-
     <script>
         const SUPABASE_URL = 'https://cfetfasggtlwgknlqjdb.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNmZXRmYXNnZ3Rsd2drbmxxamRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMzA5NDEsImV4cCI6MjA5NzkwNjk0MX0.wtavat05QxSnPlhuMQU4TSp48VEodNdajEISEH2FKMk';
@@ -3483,7 +3502,71 @@ async function loadSectionVisibility() {
         }
 
         /* --- ВИКИ СЕРВЕРА: ПОЛНЫЕ СТАТЬИ ПО МЕХАНИКАМ --- */
+        const WIKI_STRUCTURE = [
+            {
+                group: 'Общая информация',
+                items: [
+                    { key: 'welcome', title: 'Главная информация', icon: 'info' },
+                    { key: 'rule-property', title: '01. Имущество и постройки', icon: 'scroll-text' },
+                    { key: 'rule-mods', title: '02. Модификации игры', icon: 'scroll-text' },
+                    { key: 'rule-chat', title: '03. Взаимодействие в чате', icon: 'scroll-text' }
+                ]
+            },
+            {
+                group: 'Механики сервера',
+                items: [
+                    { key: 'arrest', title: 'Арест и Конвоирование', icon: 'link-2' },
+                    { key: 'blackmarket', title: 'Торговая федерация', icon: 'store' },
+                    { key: 'mask', title: 'Анонимные маски', icon: 'venetian-mask' },
+                    { key: 'newspaper', title: 'Газета Kuromi Times', icon: 'newspaper' },
+                    { key: 'death', title: 'Кастомная смерть', icon: 'skull' }
+                ]
+            }
+        ];
+
         const WIKI_ARTICLES = {
+            welcome: {
+                icon: 'info', color: 'purple',
+                title: 'Главная информация',
+                body: `
+                    <div class="wiki-tip"><i data-lucide="info"></i><div>KuromiSMP — это приватный полуванильный сервер с упором на социальное взаимодействие игроков, ролевые фракции и авторские механики.</div></div>
+                    <h4><i data-lucide="list-ordered"></i> С чего начать</h4>
+                    <ul>
+                        <li>Загляните в раздел «Доступ», чтобы узнать, как попасть на сервер.</li>
+                        <li>Изучите регламент сообщества ниже в этой вики — так вы избежите случайных наказаний.</li>
+                        <li>Прочитайте статьи о механиках сервера: аресте, торговой федерации, масках и других фишках.</li>
+                    </ul>
+                    <h4><i data-lucide="compass"></i> Разделы вики</h4>
+                    <ul>
+                        <li><b>Общая информация</b> — правила и базовые принципы сервера.</li>
+                        <li><b>Механики сервера</b> — подробный разбор всех авторских систем KuromiSMP.</li>
+                    </ul>
+                `
+            },
+            'rule-property': {
+                icon: 'scroll-text', color: 'purple',
+                title: '01. Имущество и постройки',
+                body: `
+                    <p>Любое несанкционированное изменение ландшафта, присвоение чужих ресурсов из сундуков, гриферство или разрушение чужих строений караются вечным баном. Все действия логируются на сервере.</p>
+                    <div class="wiki-tip"><i data-lucide="lightbulb"></i><div><b>Совет:</b> любые постройки и сундуки лучше приватить сразу после постройки — это защищает вас и облегчает разбор спорных ситуаций администрацией.</div></div>
+                `
+            },
+            'rule-mods': {
+                icon: 'scroll-text', color: 'purple',
+                title: '02. Модификации игрового процесса',
+                body: `
+                    <p>Запрещено использование чит-клиентов, текстур-паков типа X-Ray, скриптов, макросов или любых сторонних программ, дающих несправедливое превосходство в игровом процессе.</p>
+                    <div class="wiki-tip"><i data-lucide="lightbulb"></i><div><b>Совет:</b> разрешённый список модов и шейдеров уточняйте у администрации в Discord перед установкой сомнительных клиентов.</div></div>
+                `
+            },
+            'rule-chat': {
+                icon: 'scroll-text', color: 'purple',
+                title: '03. Взаимодействие в чате',
+                body: `
+                    <p>Запрещен намеренный токсичный прессинг участников, деструктивное поведение, разжигание конфликтов и спам. Мы развиваем взрослое и комфортное комьюнити.</p>
+                    <div class="wiki-tip"><i data-lucide="lightbulb"></i><div><b>Совет:</b> если конфликт выходит из-под контроля — не пытайтесь решить его самостоятельно, зовите модератора командой жалобы или в Discord.</div></div>
+                `
+            },
             arrest: {
                 icon: 'link-2', color: 'blue',
                 title: 'Арест и Конвоирование',
@@ -3561,35 +3644,63 @@ async function loadSectionVisibility() {
             }
         };
 
-        function openWikiArticle(key) {
+        let wikiInitialized = false;
+        let currentWikiKey = null;
+
+        function renderWikiSidebar() {
+            const nav = document.getElementById('wiki-sidebar-nav');
+            if (!nav) return;
+            nav.innerHTML = WIKI_STRUCTURE.map(group => `
+                <div class="wiki-nav-group">
+                    <div class="wiki-nav-group-title">${group.group}</div>
+                    ${group.items.map(item => `
+                        <div class="wiki-nav-item" data-wiki-key="${item.key}" data-wiki-search="${item.title.toLowerCase()}" onclick="openWikiPage('${item.key}')">
+                            <i data-lucide="${item.icon}"></i><span>${item.title}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `).join('');
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function openWikiPage(key) {
             const article = WIKI_ARTICLES[key];
             if (!article) return;
+            currentWikiKey = key;
 
-            document.getElementById('wiki-modal-title').textContent = article.title;
-            document.getElementById('wiki-modal-body').innerHTML = article.body;
+            document.getElementById('wiki-page-title').textContent = article.title;
+            document.getElementById('wiki-page-body').innerHTML = article.body;
 
-            const iconBadge = document.getElementById('wiki-modal-icon');
+            const iconBadge = document.getElementById('wiki-page-icon');
             iconBadge.className = 'icon-badge b-' + article.color;
-            iconBadge.style.width = '40px';
-            iconBadge.style.height = '40px';
             iconBadge.innerHTML = `<i data-lucide="${article.icon}"></i>`;
 
-            const overlay = document.getElementById('wiki-modal-overlay');
-            const card = document.getElementById('wiki-modal-card');
-            overlay.style.display = 'flex';
-            overlay.offsetHeight;
-            card.style.transform = 'translateY(0) scale(1)';
-            card.style.opacity = '1';
+            document.querySelectorAll('.wiki-nav-item').forEach(el => {
+                el.classList.toggle('active', el.dataset.wikiKey === key);
+            });
+
+            const content = document.getElementById('wiki-content');
+            if (content) content.scrollTop = 0;
 
             if (window.lucide) lucide.createIcons();
         }
 
-        function closeWikiArticle() {
-            const overlay = document.getElementById('wiki-modal-overlay');
-            const card = document.getElementById('wiki-modal-card');
-            card.style.transform = 'translateY(30px) scale(0.95)';
-            card.style.opacity = '0';
-            setTimeout(() => { overlay.style.display = 'none'; }, 250);
+        function filterWikiSidebar(query) {
+            const q = query.trim().toLowerCase();
+            document.querySelectorAll('.wiki-nav-item').forEach(el => {
+                el.style.display = !q || el.dataset.wikiSearch.includes(q) ? 'flex' : 'none';
+            });
+            document.querySelectorAll('.wiki-nav-group').forEach(g => {
+                const anyVisible = Array.from(g.querySelectorAll('.wiki-nav-item')).some(el => el.style.display !== 'none');
+                g.style.display = anyVisible ? 'block' : 'none';
+            });
+        }
+
+        function initWikiPage() {
+            if (wikiInitialized) return;
+            wikiInitialized = true;
+            renderWikiSidebar();
+            openWikiPage('welcome');
         }
 
         async function submitServerApplication() {
@@ -5947,7 +6058,7 @@ async function loadSectionVisibility() {
                             ₽ <span id="ruble-balance-display">${currentRubBalance}</span>
                         </div>
                     </div>
-                    <div class="widget-user-card" onclick="switchTab('profile')"><img src="https://mc-heads.net/avatar/${linkedData.minecraft_name}/44" class="widget-avatar"><div class="widget-name">${linkedData.minecraft_name}</div><div class="widget-status-text" style="color: var(--accent-pink);">● Профиль</div></div>`;
+                    <div class="widget-user-card" onclick="switchTab('profile')"><img src="https://mc-heads.net/avatar/${linkedData.minecraft_name}/44" class="widget-avatar"><div class="widget-name">${linkedData.minecraft_name}</div></div>`;
                 
                 loadWalletBalance(linkedData.minecraft_uuid);
                 updateForumForm();
@@ -6858,6 +6969,7 @@ function switchTab(tabName) {
             if(tabName === 'donate') { renderShopFront(); }
             if(tabName === 'join') renderJoinPrices();
             if(tabName === 'players') { if (window.lucide) lucide.createIcons(); renderPlayersList(); loadTopLeaderboards('public'); }
+            if(tabName === 'mechanics') { initWikiPage(); }
             if(tabName === 'profile') loadProfileData();
             if(tabName === 'forum') {
                 loadProfileData().then(() => {
@@ -9031,8 +9143,8 @@ async function saveSectionVisibility(key, value) {
     <div id="bm-toast-container"></div>
 
     <!-- Плавающая вкладка "Чаты продаж" слева экрана — доступна с любой страницы, без захода в ТФ -->
-    <button id="bm-chats-tab" onclick="openChatsDrawer()" style="display:none;">
-        <i data-lucide="message-square"></i> Чаты продаж
+    <button id="bm-chats-tab" onclick="openChatsDrawer()" style="display:none;" title="Чаты продаж">
+        <i data-lucide="message-square"></i>
     </button>
 </body>
 </html>
