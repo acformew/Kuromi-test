@@ -157,10 +157,11 @@
 
         .logo-img-right { display: none; }
 
-        button.trade-nav-btn.logo-img-left {
+        button.sidebar-trade-btn {
             position: relative;
             box-sizing: border-box;
             width: calc(100% - 20px);
+            height: auto;
             margin: 2px 10px 4px;
             display: flex;
             flex-direction: column;
@@ -181,8 +182,8 @@
             cursor: pointer;
             transition: all 0.18s var(--ease);
         }
-        button.trade-nav-btn.logo-img-left [data-lucide] { width: 18px; height: 18px; }
-        button.trade-nav-btn.logo-img-left:hover {
+        button.sidebar-trade-btn [data-lucide] { width: 18px; height: 18px; }
+        button.sidebar-trade-btn:hover {
             color: var(--text-main);
             background: rgba(255,255,255,0.04);
         }
@@ -531,6 +532,7 @@
             max-width: 100%;
             height: auto;
             object-fit: contain;
+            transform: translateY(30px);
             filter: drop-shadow(0 30px 50px rgba(0,0,0,0.5));
         }
         .hero-visual-glow {
@@ -1202,7 +1204,7 @@
         .wiki-tip [data-lucide] { width: 17px; height: 17px; color: #b985f4; flex-shrink: 0; margin-top: 1px; }
         .wiki-tip b { color: #fff; }
 
-        /* ===== Вики — GitBook-style layout: сайдбар с деревом страниц + контент + оглавление ===== */
+        /* ===== Вики — сайдбар с деревом страниц (плоские страницы + свернуть/развернуть группы) + контент ===== */
         .wiki-layout {
             display: flex;
             width: 100%;
@@ -1214,10 +1216,16 @@
             align-items: stretch;
         }
         .wiki-sidebar {
-            width: 260px;
+            width: 270px;
             flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
             background: rgba(255, 255, 255, 0.02);
             border-right: 1px solid var(--line-soft);
+            overflow: hidden;
+        }
+        .wiki-sidebar-nav {
+            flex: 1;
             padding: 16px 12px;
             overflow-y: auto;
         }
@@ -1225,12 +1233,12 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            width: 100%;
+            width: calc(100% - 24px);
+            margin: 12px 12px 6px;
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid var(--line-soft);
             border-radius: var(--r-md);
             padding: 9px 10px 9px 12px;
-            margin-bottom: 16px;
             cursor: text;
             transition: border-color 0.15s var(--ease);
         }
@@ -1246,64 +1254,133 @@
             background: rgba(255,255,255,0.05); border: 1px solid var(--line-soft);
             border-radius: 5px; padding: 2px 6px; flex-shrink: 0;
         }
-        .wiki-nav-group { margin-bottom: 4px; }
-        .wiki-nav-group-header {
-            display: flex; align-items: center; gap: 6px;
-            padding: 7px 8px; margin-bottom: 2px; cursor: pointer; user-select: none;
-            border-radius: 8px; transition: background 0.15s var(--ease);
+
+        /* Плоские страницы верхнего уровня (без вложенности) */
+        .wiki-flat-item {
+            position: relative;
+            display: flex; align-items: center; gap: 9px;
+            padding: 7px 10px; border-radius: 8px; cursor: pointer;
+            color: var(--text-muted); font-size: 0.85rem; font-weight: 500;
+            transition: all 0.15s var(--ease);
         }
-        .wiki-nav-group-header:hover { background: rgba(255,255,255,0.03); }
-        .wiki-nav-group-header [data-lucide] {
-            width: 13px; height: 13px; color: var(--text-muted);
+        .wiki-flat-item [data-lucide] { width: 15px; height: 15px; flex-shrink: 0; }
+        .wiki-flat-item:hover { color: #fff; background: rgba(255,255,255,0.04); }
+        .wiki-flat-item.active { color: #b985f4; }
+        .wiki-flat-item.active::before {
+            content: ''; position: absolute; left: 0; top: 4px; bottom: 4px; width: 2px;
+            background: #b985f4; border-radius: var(--r-full);
+        }
+
+        /* Разделитель-подпись между блоками (не кликабельный) */
+        .wiki-section-label {
+            font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em;
+            color: var(--text-muted); padding: 14px 10px 6px;
+        }
+
+        /* Раскрывающиеся группы (категории) */
+        .wiki-nav-group { margin-bottom: 1px; }
+        .wiki-nav-group-header {
+            display: flex; align-items: center; gap: 8px;
+            padding: 7px 10px; cursor: pointer; user-select: none;
+            border-radius: 8px; color: var(--text-main); font-size: 0.85rem; font-weight: 500;
+            transition: background 0.15s var(--ease);
+        }
+        .wiki-nav-group-header:hover { background: rgba(255,255,255,0.04); }
+        .wiki-nav-group-header [data-lucide]:first-child {
+            width: 14px; height: 14px; color: var(--text-muted);
             transition: transform 0.18s var(--ease); flex-shrink: 0;
         }
-        .wiki-nav-group.collapsed .wiki-nav-group-header [data-lucide] { transform: rotate(-90deg); }
-        .wiki-nav-group-title {
-            font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
-            color: var(--text-muted);
+        .wiki-nav-group.collapsed .wiki-nav-group-header [data-lucide]:first-child { transform: rotate(-90deg); }
+        .wiki-nav-group-header .wiki-group-icon { width: 15px; height: 15px; flex-shrink: 0; color: var(--text-muted); }
+
+        .wiki-nav-group-items {
+            display: flex; flex-direction: column; gap: 1px;
+            margin: 2px 0 8px 18px; padding-left: 9px;
+            border-left: 1px solid var(--line-soft);
         }
-        .wiki-nav-group-items { display: flex; flex-direction: column; gap: 1px; margin-bottom: 14px; }
         .wiki-nav-group.collapsed .wiki-nav-group-items { display: none; }
         .wiki-nav-item {
             position: relative;
-            display: flex; align-items: center; gap: 10px;
-            padding: 7px 10px 7px 22px; border-radius: 8px; cursor: pointer;
-            color: var(--text-muted); font-size: 0.83rem; font-weight: 500;
+            display: flex; align-items: center; gap: 9px;
+            padding: 6px 10px; border-radius: 8px; cursor: pointer;
+            color: var(--text-muted); font-size: 0.82rem; font-weight: 500;
             transition: all 0.15s var(--ease);
         }
-        .wiki-nav-item [data-lucide] { width: 15px; height: 15px; flex-shrink: 0; color: inherit; }
+        .wiki-nav-item [data-lucide] { width: 14px; height: 14px; flex-shrink: 0; color: inherit; }
         .wiki-nav-item:hover { color: #fff; background: rgba(255,255,255,0.04); }
         .wiki-nav-item.active {
-            color: #fff;
-            background: rgba(138, 43, 226, 0.14);
+            color: #b985f4;
+            font-weight: 700;
         }
         .wiki-nav-item.active::before {
             content: '';
-            position: absolute; left: 8px; top: 50%; transform: translateY(-50%);
-            width: 3px; height: 14px; border-radius: var(--r-full);
-            background: var(--primary-purple);
+            position: absolute; left: -10px; top: 3px; bottom: 3px; width: 2px;
+            background: #b985f4; border-radius: var(--r-full);
         }
         .wiki-nav-item.active [data-lucide] { color: #b985f4; }
+
+        .wiki-sidebar-footer {
+            display: flex; align-items: center; gap: 8px;
+            padding: 12px 16px; border-top: 1px solid var(--line-soft);
+            font-size: 0.78rem; font-weight: 600; color: var(--text-muted);
+            flex-shrink: 0;
+        }
 
         .wiki-content {
             flex: 1;
             min-width: 0;
-            padding: 32px 44px;
+            padding: 34px 46px;
             overflow-y: auto;
             max-height: 640px;
         }
         .wiki-breadcrumb {
-            font-size: 0.76rem; font-weight: 600; color: var(--text-muted);
-            text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px;
+            display: flex; align-items: center; gap: 6px;
+            font-size: 0.8rem; font-weight: 500; color: var(--text-muted);
+            margin-bottom: 18px;
         }
+        .wiki-breadcrumb .wiki-crumb-sep { color: var(--text-muted); opacity: 0.5; }
         .wiki-content-header {
-            display: flex; align-items: center; gap: 14px;
-            margin-bottom: 22px; padding-bottom: 18px;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
             border-bottom: 1px solid var(--line-soft);
         }
-        .wiki-content-header h2 { font-family: var(--font-sans); font-size: 1.3rem; font-weight: 700; color: #fff; }
+        .wiki-page-icon {
+            display: block; width: 40px; height: 40px; stroke-width: 1.5;
+            color: var(--text-muted); margin-bottom: 8px;
+        }
+        .wiki-content-header h2 { font-family: var(--font-sans); font-size: 1.8rem; font-weight: 800; color: #fff; line-height: 1.2; }
+        .wiki-page-subtitle { margin-top: 8px; font-size: 0.94rem; color: var(--text-muted); font-style: italic; }
+        .wiki-page-subtitle:empty { display: none; }
         .wiki-page-body { padding: 0; font-size: 0.94rem; }
-        .wiki-page-body h4 { scroll-margin-top: 20px; }
+
+        /* Выделенный блок-цитата с крупным жирным текстом (как в референсе) */
+        .wiki-callout-box {
+            border: 1px solid var(--line-strong);
+            border-radius: 10px;
+            padding: 12px 18px;
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #fff;
+            display: inline-block;
+            margin: 6px 0 22px;
+        }
+
+        /* Нумерованные шаги */
+        .wiki-step { display: flex; gap: 16px; margin-bottom: 22px; }
+        .wiki-step-num {
+            flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%;
+            background: rgba(255,255,255,0.06); border: 1px solid var(--line-strong);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 0.9rem; color: #fff;
+        }
+        .wiki-step-body { flex: 1; min-width: 0; padding-top: 3px; }
+        .wiki-step-body h4 { font-size: 1.08rem; font-weight: 700; color: #fff; margin-bottom: 8px; }
+        .wiki-step-or { text-align: center; color: var(--text-muted); font-size: 0.84rem; font-weight: 600; margin: 8px 0; }
+        code.wiki-inline-code {
+            display: inline-block; border: 1px solid var(--line-strong); border-radius: 6px;
+            padding: 2px 8px; font-family: monospace; font-size: 0.88rem; color: #fff;
+            background: rgba(255,255,255,0.03);
+        }
 
         .wiki-card-grid {
             display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
@@ -1318,47 +1395,9 @@
         .wiki-card .icon-badge { margin-bottom: 10px; }
         .wiki-card h5 { font-size: 0.88rem; font-weight: 700; color: #fff; margin: 0; }
 
-        .wiki-page-nav {
-            display: flex; justify-content: space-between; gap: 12px;
-            margin-top: 32px; padding-top: 18px; border-top: 1px solid var(--line-soft);
-        }
-        .wiki-page-nav-btn {
-            display: flex; flex-direction: column; gap: 4px; max-width: 48%;
-            padding: 10px 14px; border-radius: 12px; border: 1px solid var(--line-soft);
-            background: rgba(255,255,255,0.02); cursor: pointer; transition: all 0.15s var(--ease);
-        }
-        .wiki-page-nav-btn:hover { border-color: rgba(138,43,226,0.4); background: rgba(138,43,226,0.06); }
-        .wiki-page-nav-btn.next { margin-left: auto; text-align: right; align-items: flex-end; }
-        .wiki-page-nav-label { font-size: 0.66rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; display: flex; align-items: center; gap: 4px; }
-        .wiki-page-nav-label [data-lucide] { width: 12px; height: 12px; }
-        .wiki-page-nav-title { font-size: 0.84rem; font-weight: 600; color: #fff; }
-
-        .wiki-toc {
-            width: 210px;
-            flex-shrink: 0;
-            padding: 32px 20px;
-            border-left: 1px solid var(--line-soft);
-            overflow-y: auto;
-        }
-        .wiki-toc-title {
-            font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
-            color: var(--text-muted); margin-bottom: 12px;
-        }
-        .wiki-toc a {
-            display: block; padding: 5px 0; color: var(--text-muted); font-size: 0.8rem;
-            text-decoration: none; border-left: 2px solid transparent; padding-left: 10px;
-            transition: all 0.15s var(--ease);
-        }
-        .wiki-toc a:hover { color: #fff; }
-        .wiki-toc a.active { color: #b985f4; border-left-color: #b985f4; }
-        .wiki-toc:empty, .wiki-toc-title:has(+ nav:empty) { display: none; }
-
-        @media (max-width: 1180px) {
-            .wiki-toc { display: none; }
-        }
         @media (max-width: 900px) {
             .wiki-layout { flex-direction: column; min-height: 0; }
-            .wiki-sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--line-soft); max-height: 260px; }
+            .wiki-sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--line-soft); max-height: 320px; }
             .wiki-content { max-height: none; padding: 24px 22px; }
             .wiki-card-grid { grid-template-columns: 1fr; }
         }
@@ -2243,7 +2282,7 @@
                 overflow-x: auto;
                 overflow-y: visible;
             }
-            .logo-text, .logo-img-left { display: none; }
+            .logo-text, .sidebar-trade-btn { display: none; }
             nav { flex-direction: row; padding: 0; gap: 4px; margin-top: 0; }
             nav button { font-size: 0.55rem; padding: 7px 2px; min-width: 52px; }
 
@@ -2571,7 +2610,7 @@
         <a href="#" class="logo-text" onclick="switchTab('home')" title="KuromiSMP — на главную">
             K<span>S</span>
         </a>
-        <button class="logo-img-left trade-nav-btn" id="bm-trigger-logo" onclick="openBlackMarket()" title="Торговая федерация">
+        <button class="sidebar-trade-btn" id="bm-trigger-logo" onclick="openBlackMarket()" title="Торговая федерация">
             <i data-lucide="store"></i>
             <span>Торговля</span>
         </button>
@@ -2913,22 +2952,21 @@
                             <span class="wiki-search-kbd">Ctrl K</span>
                         </button>
                         <nav id="wiki-sidebar-nav" class="wiki-sidebar-nav"></nav>
+                        <div class="wiki-sidebar-footer">
+                            <span class="icon-badge b-purple" style="width:22px;height:22px;"><i data-lucide="layers"></i></span>
+                            Вики KuromiSMP
+                        </div>
                     </aside>
 
                     <div class="wiki-content" id="wiki-content">
                         <div class="wiki-breadcrumb" id="wiki-breadcrumb"></div>
                         <div class="wiki-content-header">
-                            <span class="icon-badge b-purple" id="wiki-page-icon" style="width:36px;height:36px;"><i data-lucide="book-open"></i></span>
+                            <i data-lucide="book-open" id="wiki-page-icon" class="wiki-page-icon"></i>
                             <h2 id="wiki-page-title">Загрузка...</h2>
+                            <div class="wiki-page-subtitle" id="wiki-page-subtitle"></div>
                         </div>
                         <div class="wiki-modal-body wiki-page-body" id="wiki-page-body"></div>
-                        <div class="wiki-page-nav" id="wiki-page-nav"></div>
                     </div>
-
-                    <aside class="wiki-toc" id="wiki-toc-wrap">
-                        <div class="wiki-toc-title">На этой странице</div>
-                        <nav id="wiki-toc"></nav>
-                    </aside>
                 </div>
             </div>
         </div>
@@ -3599,19 +3637,20 @@ async function loadSectionVisibility() {
 
         /* --- ВИКИ СЕРВЕРА: ПОЛНЫЕ СТАТЬИ ПО МЕХАНИКАМ --- */
         const WIKI_STRUCTURE = [
+            { type: 'page', key: 'welcome', title: 'Главная информация', icon: 'info' },
+            { type: 'label', title: 'РАЗДЕЛЫ' },
             {
-                group: 'Общая информация',
+                type: 'group', key: 'grp-rules', title: 'Правила', icon: 'scroll-text',
                 items: [
-                    { key: 'welcome', title: 'Главная информация', icon: 'info' },
-                    { key: 'rule-property', title: '01. Имущество и постройки', icon: 'scroll-text' },
-                    { key: 'rule-mods', title: '02. Модификации игры', icon: 'scroll-text' },
-                    { key: 'rule-chat', title: '03. Взаимодействие в чате', icon: 'scroll-text' }
+                    { key: 'rule-property', title: '01. Имущество и постройки', icon: 'box' },
+                    { key: 'rule-mods', title: '02. Модификации игры', icon: 'cpu' },
+                    { key: 'rule-chat', title: '03. Общение в чате', icon: 'message-circle' }
                 ]
             },
             {
-                group: 'Механики сервера',
+                type: 'group', key: 'grp-mechanics', title: 'Механики сервера', icon: 'sparkles',
                 items: [
-                    { key: 'arrest', title: 'Арест и Конвоирование', icon: 'link-2' },
+                    { key: 'arrest', title: 'Арест и конвоирование', icon: 'link-2' },
                     { key: 'blackmarket', title: 'Торговая федерация', icon: 'store' },
                     { key: 'mask', title: 'Анонимные маски', icon: 'venetian-mask' },
                     { key: 'newspaper', title: 'Газета Kuromi Times', icon: 'newspaper' },
@@ -3622,16 +3661,35 @@ async function loadSectionVisibility() {
 
         const WIKI_ARTICLES = {
             welcome: {
-                icon: 'info', color: 'purple',
+                icon: 'info',
                 title: 'Главная информация',
+                breadcrumb: ['Вики'],
+                subtitle: 'Общее описание сервера и с чего начать знакомство с KuromiSMP',
                 body: `
-                    <div class="wiki-tip"><i data-lucide="info"></i><div><b>KuromiSMP</b> — это приватный полуванильный сервер с упором на социальное взаимодействие игроков, ролевые фракции и авторские механики.</div></div>
-                    <h4><i data-lucide="list-ordered"></i> С чего начать</h4>
-                    <ul>
-                        <li>Загляните в раздел «Доступ», чтобы узнать, как попасть на сервер.</li>
-                        <li>Изучите регламент сообщества — так вы избежите случайных наказаний.</li>
-                        <li>Прочитайте статьи о механиках сервера: аресте, торговой федерации, масках и других фишках.</li>
-                    </ul>
+                    <div class="wiki-callout-box">KuromiSMP — приватный полуванильный сервер про социалку и РП</div>
+
+                    <div class="wiki-step">
+                        <div class="wiki-step-num">1</div>
+                        <div class="wiki-step-body">
+                            <h4>Получите доступ</h4>
+                            <p>Загляните в раздел «Доступ» на сайте — там описано, как попасть на сервер и привязать аккаунт.</p>
+                        </div>
+                    </div>
+                    <div class="wiki-step">
+                        <div class="wiki-step-num">2</div>
+                        <div class="wiki-step-body">
+                            <h4>Изучите регламент</h4>
+                            <p>Прочитайте раздел «Правила» ниже в этой вики — так вы избежите случайных наказаний в первый же день.</p>
+                        </div>
+                    </div>
+                    <div class="wiki-step">
+                        <div class="wiki-step-num">3</div>
+                        <div class="wiki-step-body">
+                            <h4>Разберитесь в механиках</h4>
+                            <p>Раздел «Механики сервера» подробно разбирает арест, торговую федерацию, маски и другие авторские фишки KuromiSMP.</p>
+                        </div>
+                    </div>
+
                     <h4><i data-lucide="compass"></i> Выберите интересующий раздел</h4>
                     <div class="wiki-card-grid">
                         <div class="wiki-card" onclick="openWikiPage('rule-property')">
@@ -3650,102 +3708,199 @@ async function loadSectionVisibility() {
                 `
             },
             'rule-property': {
-                icon: 'scroll-text', color: 'purple',
+                icon: 'box',
                 title: '01. Имущество и постройки',
+                breadcrumb: ['Разделы', 'Правила'],
+                subtitle: 'Что нельзя делать с чужими постройками и вещами',
                 body: `
+                    <div class="wiki-callout-box">Чужое имущество — неприкосновенно</div>
                     <p>Любое несанкционированное изменение ландшафта, присвоение чужих ресурсов из сундуков, гриферство или разрушение чужих строений караются вечным баном. Все действия логируются на сервере.</p>
                     <div class="wiki-tip"><i data-lucide="lightbulb"></i><div><b>Совет:</b> любые постройки и сундуки лучше приватить сразу после постройки — это защищает вас и облегчает разбор спорных ситуаций администрацией.</div></div>
                 `
             },
             'rule-mods': {
-                icon: 'scroll-text', color: 'purple',
+                icon: 'cpu',
                 title: '02. Модификации игрового процесса',
+                breadcrumb: ['Разделы', 'Правила'],
+                subtitle: 'Какие клиенты и моды находятся под запретом',
                 body: `
+                    <div class="wiki-callout-box">Честная игра — без читов и X-Ray</div>
                     <p>Запрещено использование чит-клиентов, текстур-паков типа X-Ray, скриптов, макросов или любых сторонних программ, дающих несправедливое превосходство в игровом процессе.</p>
                     <div class="wiki-tip"><i data-lucide="lightbulb"></i><div><b>Совет:</b> разрешённый список модов и шейдеров уточняйте у администрации в Discord перед установкой сомнительных клиентов.</div></div>
                 `
             },
             'rule-chat': {
-                icon: 'scroll-text', color: 'purple',
+                icon: 'message-circle',
                 title: '03. Взаимодействие в чате',
+                breadcrumb: ['Разделы', 'Правила'],
+                subtitle: 'Нормы общения в общем и локальном чате сервера',
                 body: `
-                    <p>Запрещен намеренный токсичный прессинг участников, деструктивное поведение, разжигание конфликтов и спам. Мы развиваем взрослое и комфортное комьюнити.</p>
+                    <div class="wiki-callout-box">Взрослое и комфортное комьюнити</div>
+                    <p>Запрещен намеренный токсичный прессинг участников, деструктивное поведение, разжигание конфликтов и спам.</p>
                     <div class="wiki-tip"><i data-lucide="lightbulb"></i><div><b>Совет:</b> если конфликт выходит из-под контроля — не пытайтесь решить его самостоятельно, зовите модератора командой жалобы или в Discord.</div></div>
                 `
             },
             arrest: {
-                icon: 'link-2', color: 'blue',
-                title: 'Арест и Конвоирование',
+                icon: 'link-2',
+                title: 'Арест и конвоирование',
+                breadcrumb: ['Разделы', 'Механики сервера'],
+                subtitle: 'Ролевая система задержания нарушителей без банов «в лоб»',
                 body: `
-                    <h4><i data-lucide="info"></i> Что это такое</h4>
-                    <p>Ролевая механика задержания нарушителей без банов и киков «в лоб». Она нужна для отыгрыша полицейских и охранных РП-фракций: вместо того чтобы жаловаться администрации, конвоир сам временно обездвиживает нарушителя и ведёт его на разбирательство.</p>
-                    <h4><i data-lucide="list-ordered"></i> Как это работает</h4>
-                    <ul>
-                        <li>Игрок с лицензией на арест использует наручники командой <code>/cuf</code> на нарушителе.</li>
-                        <li>Скованный игрок теряет возможность свободно передвигаться и следует за конвоиром на невидимом РП-поводке.</li>
-                        <li>Конвоир решает дальнейшую судьбу: довести до администрации для разбирательства или отпустить (<code>/cuf revoke</code>).</li>
-                    </ul>
-                    <div class="wiki-tip"><i data-lucide="lightbulb"></i><div><b>Совет:</b> лицензия на арест выпадает в Колесе Фортуны или приобретается отдельно — без неё команда <code>/cuf</code> не сработает.</div></div>
+                    <div class="wiki-callout-box">Как работает арест на KuromiSMP?</div>
+
+                    <div class="wiki-step">
+                        <div class="wiki-step-num">1</div>
+                        <div class="wiki-step-body">
+                            <h4>Наденьте наручники</h4>
+                            <p>Игрок с лицензией на арест использует команду <code class="wiki-inline-code">/cuf</code> на нарушителе — тот теряет возможность свободно передвигаться.</p>
+                        </div>
+                    </div>
+                    <div class="wiki-step">
+                        <div class="wiki-step-num">2</div>
+                        <div class="wiki-step-body">
+                            <h4>Конвоируйте на РП-поводке</h4>
+                            <p>Скованный игрок следует за конвоиром на невидимом РП-поводке до места разбирательства.</p>
+                        </div>
+                    </div>
+                    <div class="wiki-step">
+                        <div class="wiki-step-num">3</div>
+                        <div class="wiki-step-body">
+                            <h4>Передайте администрации или отпустите</h4>
+                            <p>Конвоир решает дальнейшую судьбу: довести нарушителя до администрации либо снять наручники командой <code class="wiki-inline-code">/cuf revoke</code>.</p>
+                        </div>
+                    </div>
+
+                    <div class="wiki-tip"><i data-lucide="lightbulb"></i><div><b>Совет:</b> лицензия на арест выпадает в Колесе Фортуны или приобретается отдельно — без неё команда <code class="wiki-inline-code">/cuf</code> не сработает.</div></div>
                 `
             },
             blackmarket: {
-                icon: 'store', color: 'purple',
+                icon: 'store',
                 title: 'Торговая федерация',
+                breadcrumb: ['Разделы', 'Механики сервера'],
+                subtitle: 'Внутриигровой рынок с гарантом сделки и биржей вакансий',
                 body: `
-                    <h4><i data-lucide="info"></i> Что это такое</h4>
-                    <p>Внутриигровой рынок сервера с двумя разделами: торговая площадка для купли-продажи предметов между игроками и биржа вакансий для разовых подрядов. Все сделки защищены встроенным гарантом.</p>
-                    <h4><i data-lucide="list-ordered"></i> Как это работает</h4>
-                    <ul>
-                        <li>Продавец выставляет лот с названием, ценой и описанием — либо публикует вакансию с оплатой и сроком выполнения.</li>
-                        <li>Деньги покупателя (или заказчика вакансии) замораживаются на площадке до подтверждения сделки.</li>
-                        <li>После передачи товара или выполнения работы обе стороны подтверждают сделку, и средства переводятся продавцу или исполнителю.</li>
-                    </ul>
+                    <div class="wiki-callout-box">Как совершить безопасную сделку?</div>
+
+                    <div class="wiki-step">
+                        <div class="wiki-step-num">1</div>
+                        <div class="wiki-step-body">
+                            <h4>Выставьте лот или вакансию</h4>
+                            <p>Продавец публикует лот с названием, ценой и описанием — либо вакансию с оплатой и сроком выполнения.</p>
+                        </div>
+                    </div>
+                    <div class="wiki-step">
+                        <div class="wiki-step-num">2</div>
+                        <div class="wiki-step-body">
+                            <h4>Средства замораживаются гарантом</h4>
+                            <p>Деньги покупателя (или заказчика вакансии) удерживаются площадкой до подтверждения сделки обеими сторонами.</p>
+                        </div>
+                    </div>
+                    <div class="wiki-step">
+                        <div class="wiki-step-num">3</div>
+                        <div class="wiki-step-body">
+                            <h4>Подтвердите завершение</h4>
+                            <p>После передачи товара или выполнения работы обе стороны подтверждают сделку — средства переводятся продавцу или исполнителю.</p>
+                        </div>
+                    </div>
+
                     <div class="wiki-tip"><i data-lucide="lightbulb"></i><div><b>Важно:</b> при разногласиях по сделке любая из сторон может открыть спор — тогда решение принимает администрация.</div></div>
                 `
             },
             mask: {
-                icon: 'venetian-mask', color: 'purple',
+                icon: 'venetian-mask',
                 title: 'Анонимные маски',
+                breadcrumb: ['Разделы', 'Механики сервера'],
+                subtitle: 'Как скрыть свою личность на сервере при сделках и ролевых играх',
                 body: `
-                    <h4><i data-lucide="info"></i> Что это такое</h4>
-                    <p>Косметический предмет для тех, кто хочет скрыть свою личность на сервере — например, во время сделок в торговой федерации или ролевых интриг.</p>
-                    <h4><i data-lucide="list-ordered"></i> Как это работает</h4>
-                    <ul>
-                        <li>Маска приобретается в магазине привилегий или выпадает в Колесе Фортуны.</li>
-                        <li>При экипировке ваш игровой никнейм в табе и над головой полностью подменяется анонимным именем.</li>
-                        <li>Снять маску и вернуть настоящий ник можно в любой момент.</li>
-                    </ul>
+                    <div class="wiki-callout-box">Скрываем ник — сохраняем интригу</div>
+
+                    <div class="wiki-step">
+                        <div class="wiki-step-num">1</div>
+                        <div class="wiki-step-body">
+                            <h4>Приобретите маску</h4>
+                            <p>Маска покупается в магазине привилегий или выпадает в Колесе Фортуны.</p>
+                        </div>
+                    </div>
+                    <div class="wiki-step">
+                        <div class="wiki-step-num">2</div>
+                        <div class="wiki-step-body">
+                            <h4>Наденьте её</h4>
+                            <p>При экипировке ваш игровой никнейм в табе и над головой полностью подменяется анонимным именем.</p>
+                        </div>
+                    </div>
+                    <div class="wiki-step">
+                        <div class="wiki-step-num">3</div>
+                        <div class="wiki-step-body">
+                            <h4>Снимите в любой момент</h4>
+                            <p>Снять маску и вернуть настоящий ник можно когда угодно, без ограничений по времени.</p>
+                        </div>
+                    </div>
+
                     <div class="wiki-tip"><i data-lucide="lightbulb"></i><div><b>Совет:</b> маска не защищает от логов CoreProtect — администрация всегда может установить, кто скрывался под ней.</div></div>
                 `
             },
             newspaper: {
-                icon: 'newspaper', color: 'blue',
+                icon: 'newspaper',
                 title: 'Газета Kuromi Times',
+                breadcrumb: ['Разделы', 'Механики сервера'],
+                subtitle: 'Как опубликовать свою статью или расследование о жизни сервера',
                 body: `
-                    <h4><i data-lucide="info"></i> Что это такое</h4>
-                    <p>Информационный вестник сервера — истории, расследования и репортажи о происходящем на KuromiSMP, которые пишут сами игроки.</p>
-                    <h4><i data-lucide="list-ordered"></i> Как опубликовать статью</h4>
-                    <ul>
-                        <li>Подготовьте текст статьи или расследования по событиям на сервере.</li>
-                        <li>Отправьте материал редакции через Discord или Telegram сервера для рассмотрения.</li>
-                        <li>После модерации редакцией статья публикуется в разделе новостей на сайте.</li>
-                    </ul>
+                    <div class="wiki-callout-box">Пишут сами игроки — публикует редакция</div>
+
+                    <div class="wiki-step">
+                        <div class="wiki-step-num">1</div>
+                        <div class="wiki-step-body">
+                            <h4>Подготовьте материал</h4>
+                            <p>Напишите статью или расследование по событиям, происходящим на KuromiSMP.</p>
+                        </div>
+                    </div>
+                    <div class="wiki-step">
+                        <div class="wiki-step-num">2</div>
+                        <div class="wiki-step-body">
+                            <h4>Отправьте редакции</h4>
+                            <p>Пришлите материал через Discord или Telegram сервера для рассмотрения.</p>
+                        </div>
+                    </div>
+                    <div class="wiki-step">
+                        <div class="wiki-step-num">3</div>
+                        <div class="wiki-step-body">
+                            <h4>Дождитесь публикации</h4>
+                            <p>После модерации редакцией статья публикуется в разделе новостей на сайте.</p>
+                        </div>
+                    </div>
+
                     <div class="wiki-tip"><i data-lucide="lightbulb"></i><div><b>Совет:</b> редакция охотнее берёт материалы с конкретными деталями — никами участников, датами и итогом истории.</div></div>
                 `
             },
             death: {
-                icon: 'skull', color: 'purple',
+                icon: 'skull',
                 title: 'Кастомная смерть',
+                breadcrumb: ['Разделы', 'Механики сервера'],
+                subtitle: 'Косметическая привилегия для запоминающейся гибели',
                 body: `
-                    <h4><i data-lucide="info"></i> Что это такое</h4>
-                    <p>Чисто косметическая привилегия, которая делает вашу гибель более запоминающейся — без влияния на игровой баланс.</p>
-                    <h4><i data-lucide="list-ordered"></i> Как это работает</h4>
-                    <ul>
-                        <li>При активной привилегии сообщение о вашей смерти в общем чате заменяется на уникальный авторский текст.</li>
-                        <li>В точке гибели спавнятся густые ведьминские частицы дыма.</li>
-                        <li>Эффект срабатывает при любой смерти — от игрока, моба или окружения.</li>
-                    </ul>
-                    <div class="wiki-tip"><i data-lucide="lightbulb"></i><div><b>Совет:</b> привилегию можно приобрести в магазине или выбить в Колесе Фортуны со скидкой.</div></div>
+                    <div class="wiki-callout-box">Чисто косметика — без влияния на баланс</div>
+
+                    <div class="wiki-step">
+                        <div class="wiki-step-num">1</div>
+                        <div class="wiki-step-body">
+                            <h4>Активируйте привилегию</h4>
+                            <p>Приобретите её в магазине или выбейте в Колесе Фортуны со скидкой.</p>
+                        </div>
+                    </div>
+                    <div class="wiki-step">
+                        <div class="wiki-step-num">2</div>
+                        <div class="wiki-step-body">
+                            <h4>Погибните где угодно</h4>
+                            <p>Эффект срабатывает при любой смерти — от игрока, моба или окружения.</p>
+                        </div>
+                    </div>
+                    <div class="wiki-step">
+                        <div class="wiki-step-num">3</div>
+                        <div class="wiki-step-body">
+                            <h4>Насладитесь эффектом</h4>
+                            <p>Сообщение о смерти в чате заменяется авторским текстом, а в точке гибели спавнятся густые ведьминские частицы дыма.</p>
+                        </div>
+                    </div>
                 `
             }
         };
@@ -3755,27 +3910,45 @@ async function loadSectionVisibility() {
         let wikiCollapsedGroups = new Set();
 
         function wikiFlatList() {
-            return WIKI_STRUCTURE.flatMap(g => g.items.map(item => ({ ...item, group: g.group })));
+            const list = [];
+            WIKI_STRUCTURE.forEach(entry => {
+                if (entry.type === 'page') list.push({ key: entry.key, title: entry.title });
+                if (entry.type === 'group') entry.items.forEach(item => list.push({ key: item.key, title: item.title }));
+            });
+            return list;
         }
 
         function renderWikiSidebar() {
             const nav = document.getElementById('wiki-sidebar-nav');
             if (!nav) return;
-            nav.innerHTML = WIKI_STRUCTURE.map((group, gi) => `
-                <div class="wiki-nav-group" data-group-index="${gi}">
-                    <div class="wiki-nav-group-header" onclick="toggleWikiGroup(${gi})">
-                        <i data-lucide="chevron-down"></i>
-                        <span class="wiki-nav-group-title">${group.group}</span>
+            nav.innerHTML = WIKI_STRUCTURE.map((entry, gi) => {
+                if (entry.type === 'page') {
+                    return `
+                        <div class="wiki-flat-item" data-wiki-key="${entry.key}" data-wiki-search="${entry.title.toLowerCase()}" onclick="openWikiPage('${entry.key}')">
+                            <i data-lucide="${entry.icon}"></i><span>${entry.title}</span>
+                        </div>
+                    `;
+                }
+                if (entry.type === 'label') {
+                    return `<div class="wiki-section-label">${entry.title}</div>`;
+                }
+                return `
+                    <div class="wiki-nav-group" data-group-index="${gi}">
+                        <div class="wiki-nav-group-header" onclick="toggleWikiGroup(${gi})">
+                            <i data-lucide="chevron-down"></i>
+                            <i data-lucide="${entry.icon}" class="wiki-group-icon"></i>
+                            <span>${entry.title}</span>
+                        </div>
+                        <div class="wiki-nav-group-items">
+                            ${entry.items.map(item => `
+                                <div class="wiki-nav-item" data-wiki-key="${item.key}" data-wiki-search="${item.title.toLowerCase()}" onclick="openWikiPage('${item.key}')">
+                                    <i data-lucide="${item.icon}"></i><span>${item.title}</span>
+                                </div>
+                            `).join('')}
+                        </div>
                     </div>
-                    <div class="wiki-nav-group-items">
-                        ${group.items.map(item => `
-                            <div class="wiki-nav-item" data-wiki-key="${item.key}" data-wiki-search="${item.title.toLowerCase()}" onclick="openWikiPage('${item.key}')">
-                                <i data-lucide="${item.icon}"></i><span>${item.title}</span>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
             if (window.lucide) lucide.createIcons();
         }
 
@@ -3796,24 +3969,21 @@ async function loadSectionVisibility() {
             if (!article) return;
             currentWikiKey = key;
 
-            const flat = wikiFlatList();
-            const idx = flat.findIndex(i => i.key === key);
-            const groupName = flat[idx] ? flat[idx].group : '';
+            const crumbs = article.breadcrumb || [];
+            document.getElementById('wiki-breadcrumb').innerHTML = crumbs.map((c, i) =>
+                (i > 0 ? '<i data-lucide="chevron-right" class="wiki-crumb-sep"></i>' : '') + `<span>${c}</span>`
+            ).join('');
 
-            document.getElementById('wiki-breadcrumb').textContent = groupName;
             document.getElementById('wiki-page-title').textContent = article.title;
+            document.getElementById('wiki-page-subtitle').textContent = article.subtitle || '';
             document.getElementById('wiki-page-body').innerHTML = article.body;
 
-            const iconBadge = document.getElementById('wiki-page-icon');
-            iconBadge.className = 'icon-badge b-' + article.color;
-            iconBadge.innerHTML = `<i data-lucide="${article.icon}"></i>`;
+            const iconEl = document.getElementById('wiki-page-icon');
+            iconEl.setAttribute('data-lucide', article.icon);
 
-            document.querySelectorAll('.wiki-nav-item').forEach(el => {
+            document.querySelectorAll('.wiki-nav-item, .wiki-flat-item').forEach(el => {
                 el.classList.toggle('active', el.dataset.wikiKey === key);
             });
-
-            renderWikiToc();
-            renderWikiPageNav(idx, flat);
 
             const content = document.getElementById('wiki-content');
             if (content) content.scrollTop = 0;
@@ -3821,43 +3991,9 @@ async function loadSectionVisibility() {
             if (window.lucide) lucide.createIcons();
         }
 
-        function renderWikiToc() {
-            const body = document.getElementById('wiki-page-body');
-            const tocNav = document.getElementById('wiki-toc');
-            const tocWrap = document.getElementById('wiki-toc-wrap');
-            if (!body || !tocNav) return;
-            const headings = Array.from(body.querySelectorAll('h4'));
-            if (headings.length === 0) {
-                tocNav.innerHTML = '';
-                if (tocWrap) tocWrap.style.display = 'none';
-                return;
-            }
-            if (tocWrap) tocWrap.style.display = '';
-            headings.forEach((h, i) => { h.id = h.id || `wiki-heading-${i}`; });
-            tocNav.innerHTML = headings.map(h => `<a href="#${h.id}" onclick="event.preventDefault(); document.getElementById('${h.id}').scrollIntoView({behavior:'smooth', block:'start'});">${h.textContent}</a>`).join('');
-        }
-
-        function renderWikiPageNav(idx, flat) {
-            const wrap = document.getElementById('wiki-page-nav');
-            if (!wrap) return;
-            const prev = flat[idx - 1];
-            const next = flat[idx + 1];
-            wrap.innerHTML = `
-                ${prev ? `<div class="wiki-page-nav-btn prev" onclick="openWikiPage('${prev.key}')">
-                    <div class="wiki-page-nav-label"><i data-lucide="arrow-left"></i> Назад</div>
-                    <div class="wiki-page-nav-title">${prev.title}</div>
-                </div>` : '<div></div>'}
-                ${next ? `<div class="wiki-page-nav-btn next" onclick="openWikiPage('${next.key}')">
-                    <div class="wiki-page-nav-label">Далее <i data-lucide="arrow-right"></i></div>
-                    <div class="wiki-page-nav-title">${next.title}</div>
-                </div>` : ''}
-            `;
-            if (window.lucide) lucide.createIcons();
-        }
-
         function filterWikiSidebar(query) {
             const q = query.trim().toLowerCase();
-            document.querySelectorAll('.wiki-nav-item').forEach(el => {
+            document.querySelectorAll('.wiki-nav-item, .wiki-flat-item').forEach(el => {
                 el.style.display = !q || el.dataset.wikiSearch.includes(q) ? 'flex' : 'none';
             });
             document.querySelectorAll('.wiki-nav-group').forEach(g => {
@@ -6314,7 +6450,7 @@ async function loadSectionVisibility() {
 
         window.addEventListener('click', function(e) {
             if(window.innerWidth <= 768) return; 
-            if(e.target.closest('#snakeCanvas') || e.target.closest('.snake-footer-container') || e.target.closest('.logo-img-left') || e.target.closest('.header-profile-sidebar') || e.target.closest('#forum-fixed-btn') || e.target.closest('#custom-modal-card') || e.target.closest('#app-modal-card') || e.target.closest('#wiki-modal-card') || e.target.closest('#bm-fullpage') || e.target.closest('#bm-detail-overlay') || e.target.closest('#bm-chat-overlay')) return; 
+            if(e.target.closest('#snakeCanvas') || e.target.closest('.snake-footer-container') || e.target.closest('.sidebar-trade-btn') || e.target.closest('.header-profile-sidebar') || e.target.closest('#forum-fixed-btn') || e.target.closest('#custom-modal-card') || e.target.closest('#app-modal-card') || e.target.closest('#wiki-modal-card') || e.target.closest('#bm-fullpage') || e.target.closest('#bm-detail-overlay') || e.target.closest('#bm-chat-overlay')) return; 
             const particleCount = 10; 
             for (let i = 0; i < particleCount; i++) { createSparkParticle(e.clientX, e.clientY); }
         });
@@ -6718,7 +6854,7 @@ async function loadSectionVisibility() {
                 const bgSize = Math.round(64 * scale);
                 const pos = -Math.round(8 * scale);
                 return `<div style="width:${size}px; height:${size}px; border-radius:${radius}px; overflow:hidden; position:relative; background:#c68958;">
-                    <div style="position:absolute; inset:0; background-image:url('${textureUrl}'); background-repeat:no-repeat; background-size:${bgSize}px ${bgSize}px; background-position:${pos}px ${pos}px;"></div>
+                    <div style="position:absolute; inset:0; image-rendering:pixelated; background-image:url('${textureUrl}'); background-repeat:no-repeat; background-size:${bgSize}px ${bgSize}px; background-position:${pos}px ${pos}px;"></div>
                 </div>`;
             }
             return `<img src="https://mc-heads.net/avatar/${name}/${size}" alt="${name}" width="${size}" height="${size}" style="border-radius:${radius}px; display:block;">`;
