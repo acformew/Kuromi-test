@@ -112,10 +112,10 @@
         header::-webkit-scrollbar { display: none; }
 
         .logo-text {
-            width: 42px;
-            height: 42px;
+            width: 48px;
+            height: 48px;
             border-radius: var(--r-md);
-            background: var(--grad-brand);
+            background: transparent;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -129,11 +129,10 @@
             line-height: 1;
             z-index: 2;
             flex-shrink: 0;
-            box-shadow: 0 8px 20px -6px rgba(138,43,226,0.55);
-            transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease);
+            transition: transform 0.25s var(--ease);
         }
-        .logo-text:hover { transform: scale(1.06) rotate(-3deg); box-shadow: 0 10px 24px -6px rgba(255,0,127,0.55); }
-        .logo-text img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+        .logo-text:hover { transform: scale(1.06) rotate(-3deg); }
+        .logo-text img { width: 100%; height: 100%; object-fit: contain; border-radius: inherit; }
 
         .logo-img-left, .logo-img-right {
             position: static;
@@ -445,6 +444,19 @@
             z-index: 3;
         }
         .hero-panel:hover { border-color: transparent; }
+
+        /* ---- Форум: убираем плашку-карточку, контент во всю ширину экрана ---- */
+        .forum-panel {
+            padding: 0;
+            background: none;
+            border: none;
+            box-shadow: none;
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+            align-items: stretch;
+        }
+        .forum-panel:hover { border-color: transparent; }
+        .forum-panel .panel-title { justify-content: flex-start; text-align: left; }
         .hero-grid {
             display: grid;
             grid-template-columns: 1.15fr 0.85fr;
@@ -500,7 +512,7 @@
         }
         .hero-visual-img {
             position: relative;
-            width: 640px;
+            width: 820px;
             max-width: none;
             height: auto;
             object-fit: contain;
@@ -641,7 +653,7 @@
             .hero-copy { align-items: center; text-align: center; }
             .hero-meta-row, .features-line, .cta-group { justify-content: center; }
             .hero-visual { order: -1; min-height: 280px; }
-            .hero-visual-img { width: 320px; }
+            .hero-visual-img { width: 400px; }
         }
 
         .panel-title {
@@ -1789,17 +1801,6 @@
         }
         @keyframes bmPageIn { from { opacity: 0; } to { opacity: 1; } }
 
-        /* Плавающие цветные ауры + звёздная пыль + частицы на фоне портала — заметный "живой" фон */
-        .bm-aura { position: fixed; border-radius: 50%; filter: blur(85px); pointer-events: none; z-index: 0; opacity: 0.65; animation: bmAuraFloat 16s ease-in-out infinite; }
-        .bm-aura-1 { width: 560px; height: 560px; top: -160px; left: 4%; background: radial-gradient(circle, rgba(138,43,226,0.7), transparent 70%); }
-        .bm-aura-2 { width: 500px; height: 500px; bottom: -140px; right: 4%; background: radial-gradient(circle, rgba(255,0,127,0.55), transparent 70%); animation-delay: -6s; animation-duration: 20s; }
-        .bm-aura-3 { width: 420px; height: 420px; top: 40%; left: 46%; background: radial-gradient(circle, rgba(94,232,154,0.28), transparent 70%); animation-delay: -10s; animation-duration: 24s; }
-        .bm-aura-4 { width: 380px; height: 380px; top: 5%; right: 20%; background: radial-gradient(circle, rgba(255,183,3,0.22), transparent 70%); animation-delay: -3s; animation-duration: 18s; }
-        @keyframes bmAuraFloat {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            33% { transform: translate(44px, -36px) scale(1.12); }
-            66% { transform: translate(-36px, 28px) scale(0.92); }
-        }
         .bm-starfield {
             position: fixed; inset: 0; z-index: 0; pointer-events: none;
             background-image:
@@ -1814,23 +1815,6 @@
             animation: bmTwinkle 4.5s ease-in-out infinite alternate;
         }
         @keyframes bmTwinkle { from { opacity: 0.35; } to { opacity: 0.85; } }
-
-        /* Дрейфующие вверх светящиеся частицы — заметный, но лёгкий эффект поверх аур */
-        .bm-particles { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
-        .bm-particles span {
-            position: absolute; bottom: -30px; width: 4px; height: 4px; border-radius: 50%;
-            background: #b985f4; box-shadow: 0 0 10px 3px rgba(185,133,244,0.6);
-            animation: bmParticleRise linear infinite;
-        }
-        .bm-particles span:nth-child(3n) { background: #ff5fa8; box-shadow: 0 0 10px 3px rgba(255,95,168,0.6); }
-        .bm-particles span:nth-child(4n) { width: 2.5px; height: 2.5px; }
-        .bm-particles span:nth-child(5n) { width: 6px; height: 6px; background: #ffd76a; box-shadow: 0 0 12px 3px rgba(255,215,106,0.5); }
-        @keyframes bmParticleRise {
-            0% { transform: translateY(0) translateX(0); opacity: 0; }
-            8% { opacity: 0.9; }
-            92% { opacity: 0.6; }
-            100% { transform: translateY(-100vh) translateX(24px); opacity: 0; }
-        }
 
         .bm-fullpage-overlay .bm-portal-wrap { position: relative; z-index: 1; width: 100%; max-width: none; }
         .bm-exit-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; width: 100%; }
@@ -1902,12 +1886,13 @@
         /* Двухколоночная структура вкладки: форма слева, витрина справа — просторнее и понятнее */
         .bm-layout {
             display: grid;
-            grid-template-columns: minmax(280px, 340px) 1fr;
+            grid-template-columns: 1fr minmax(280px, 340px);
             gap: 36px;
             width: 100%;
             align-items: start;
         }
-        .bm-layout .bm-form-card { margin-top: 0; }
+        .bm-layout .bm-listing-col { order: 1; }
+        .bm-layout .bm-form-card { order: 2; margin-top: 0; }
         .bm-listing-col { min-width: 0; }
         @media (max-width: 860px) {
             .bm-layout { grid-template-columns: 1fr; }
@@ -2198,12 +2183,12 @@
         }
         #bm-chats-drawer-overlay.open { display: block; }
         #bm-chats-drawer {
-            position: fixed; left: -380px; top: 0; bottom: 0; width: 360px; z-index: 18600;
-            background: rgba(13,9,22,0.99); border-right: 1px solid rgba(138,43,226,0.3);
-            box-shadow: 10px 0 40px rgba(0,0,0,0.5); padding: 20px 14px; overflow-y: auto;
-            transition: left 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            position: fixed; right: -380px; top: 0; bottom: 0; width: 360px; z-index: 18600;
+            background: rgba(13,9,22,0.99); border-left: 1px solid rgba(138,43,226,0.3);
+            box-shadow: -10px 0 40px rgba(0,0,0,0.5); padding: 20px 14px; overflow-y: auto;
+            transition: right 0.25s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        #bm-chats-drawer.open { left: 0; }
+        #bm-chats-drawer.open { right: 0; }
         #bm-chats-drawer h3 { display: flex; align-items: center; gap: 8px; font-size: 1rem; color: #fff; margin-bottom: 4px; padding: 0 4px; }
         #bm-chats-drawer .sub { font-size: 0.72rem; color: var(--text-muted); padding: 0 4px; margin-bottom: 14px; }
         .bm-chat-list-item {
@@ -2621,6 +2606,7 @@
         @media (max-width: 768px) {
             h1 { font-size: 1.8rem; } 
             .ux-panel { padding: 24px 16px; border-radius: var(--r-lg); margin-bottom: 16px; }
+            .forum-panel { padding: 0; }
             .features-line { flex-direction: column; gap: 12px; white-space: normal !important; flex-wrap: wrap !important; }
             .cta-group { flex-direction: column; gap: 10px; width: 100%; margin-top: 24px; }
             .btn-primary, .btn-secondary { width: 100%; text-align: center; justify-content: center; }
@@ -2958,7 +2944,7 @@
             <div class="ux-panel hero-panel">
                 <div class="hero-grid">
                     <div class="hero-copy">
-                        <h1>Kuromi<br>Майнкрафт сервер</h1>
+                        <h1>Kuromi</h1>
 
                         <div class="hero-meta-row">
                             <span class="hero-meta-text">Java Minecraft · 1.21.11</span>
@@ -3333,29 +3319,7 @@
         </div>
 
         <div id="bm-fullpage" class="bm-fullpage-overlay">
-            <div class="bm-aura bm-aura-1"></div>
-            <div class="bm-aura bm-aura-2"></div>
-            <div class="bm-aura bm-aura-3"></div>
-            <div class="bm-aura bm-aura-4"></div>
             <div class="bm-starfield"></div>
-            <div class="bm-particles">
-                <span style="left:4%; animation-duration:9s; animation-delay:0s;"></span>
-                <span style="left:11%; animation-duration:13s; animation-delay:1.4s;"></span>
-                <span style="left:18%; animation-duration:10.5s; animation-delay:3.1s;"></span>
-                <span style="left:26%; animation-duration:14s; animation-delay:0.6s;"></span>
-                <span style="left:34%; animation-duration:11s; animation-delay:4.2s;"></span>
-                <span style="left:42%; animation-duration:12.5s; animation-delay:2s;"></span>
-                <span style="left:50%; animation-duration:9.5s; animation-delay:5s;"></span>
-                <span style="left:58%; animation-duration:13.5s; animation-delay:1s;"></span>
-                <span style="left:66%; animation-duration:10s; animation-delay:3.6s;"></span>
-                <span style="left:74%; animation-duration:14.5s; animation-delay:0.2s;"></span>
-                <span style="left:82%; animation-duration:11.5s; animation-delay:2.8s;"></span>
-                <span style="left:90%; animation-duration:9s; animation-delay:4.6s;"></span>
-                <span style="left:96%; animation-duration:12s; animation-delay:1.8s;"></span>
-                <span style="left:8%; animation-duration:15s; animation-delay:6s;"></span>
-                <span style="left:47%; animation-duration:16s; animation-delay:7s;"></span>
-                <span style="left:70%; animation-duration:13s; animation-delay:5.5s;"></span>
-            </div>
             <div class="bm-portal-wrap">
                 <div class="bm-exit-bar">
                     <button class="bm-exit-btn" onclick="closeBlackMarket()"><i data-lucide="arrow-left"></i> Вернуться на сайт</button>
@@ -3633,8 +3597,8 @@
         </div>
 
         <div id="section-forum" class="content-section">
-            <div class="ux-panel">
-                <div class="panel-title" style="display:flex; align-items:center; gap:10px; justify-content:center;">
+            <div class="ux-panel forum-panel">
+                <div class="panel-title" style="display:flex; align-items:center; gap:10px;">
                     <span class="icon-badge b-blue" style="width:32px;height:32px;"><i data-lucide="messages-square"></i></span> Форум сообщества
                 </div>
                 <div id="forum-form-container" style="width: 100%; margin-bottom: 30px;"></div>
