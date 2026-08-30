@@ -740,42 +740,52 @@
         .join-title em { font-style: normal; color: var(--accent-pink); }
         .join-subtitle { color: var(--text-muted); font-size: 0.95rem; line-height: 1.5; }
 
-        .pricing-grid {
+        .pricing-grid,
+        .access-tiers-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 18px;
-            align-items: center;
+            align-items: stretch;
             width: 100%;
             margin-bottom: 34px;
         }
 
-        .pricing-card {
+        /* Широкий рендер трёх коробок пропуска над колонками с ценами */
+        .access-banner {
+            position: relative;
+            width: 100%;
+            border-radius: var(--r-xl);
+            border: 1px solid var(--line-soft);
+            overflow: hidden;
+            margin-bottom: 22px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.4);
+        }
+        .access-banner-img {
+            display: block;
+            width: 100%;
+            height: auto;
+            max-height: 560px;
+            object-fit: cover;
+            object-position: center 30%;
+        }
+
+        .access-tier, .pricing-card {
             background: var(--surface-1);
             border: 1px solid var(--line-soft);
+            border-top: 3px solid var(--line-soft);
             border-radius: 10px;
-            padding: 30px 26px;
+            padding: 26px 24px;
             display: flex;
             flex-direction: column;
             text-align: left;
             position: relative;
             transition: transform 0.25s var(--ease), border-color 0.25s var(--ease), box-shadow 0.25s var(--ease);
         }
-        .pricing-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px -18px rgba(0,0,0,0.5); border-color: var(--line-strong); }
+        .access-tier:hover, .pricing-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px -18px rgba(0,0,0,0.5); border-color: var(--line-strong); }
 
-        .pricing-watermark {
-            position: absolute; right: 6px; bottom: 6px; z-index: 0;
-            opacity: 0.04; transform: rotate(-14deg); pointer-events: none; color: #fff;
-        }
-        .pricing-watermark [data-lucide] { width: 128px; height: 128px; stroke-width: 1; }
-        .pricing-card > *:not(.pricing-watermark) { position: relative; z-index: 1; }
-
-
-        .pricing-card.featured {
-            background: var(--surface-1);
-            border: 1px solid var(--line-strong);
-            padding: 34px 28px;
-        }
-        .pricing-card.featured .pricing-watermark [data-lucide] { width: 120px; height: 120px; }
+        .access-tier.tier-permanent { border-top-color: #8b8b93; }
+        .access-tier.featured { border-top-color: var(--accent-pink); border: 1px solid var(--line-strong); padding: 30px 26px; }
+        .access-tier.tier-free { border-top-color: #cbb389; }
 
         .pricing-ribbon {
             position: absolute; top: -13px; left: 26px; z-index: 2;
@@ -784,36 +794,22 @@
             padding: 5px 14px; border-radius: 100px;
         }
 
-        .pricing-box-img {
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            margin-bottom: 22px;
-        }
-        .pricing-box-img img {
-            width: 340px;
-            max-width: 100%;
-            height: auto;
-            filter: drop-shadow(0 14px 22px rgba(0,0,0,0.5));
-        }
-        .pricing-card.featured .pricing-box-img img { width: 368px; }
-
         .pricing-name { font-family: var(--font-sans); font-size: 1rem; font-weight: 700; margin-bottom: 5px; }
-        .pricing-card.featured .pricing-name { font-size: 1.2rem; }
+        .access-tier.featured .pricing-name { font-size: 1.2rem; }
         .pricing-tagline { font-size: 0.82rem; color: var(--text-muted); line-height: 1.4; margin-bottom: 22px; min-height: 35px; }
-        .pricing-card.featured .pricing-tagline { font-size: 0.88rem; min-height: 0; }
+        .access-tier.featured .pricing-tagline { font-size: 0.88rem; min-height: 0; }
 
         .pricing-amount { font-size: 2rem; font-weight: 800; margin-bottom: 18px; letter-spacing: -0.01em; }
         .pricing-amount sup { font-size: 0.9rem; font-weight: 600; color: var(--text-muted); margin-left: 4px; }
-        .pricing-card.featured .pricing-amount { font-size: 2.6rem; }
+        .access-tier.featured .pricing-amount { font-size: 2.6rem; }
 
         .pricing-cta { width: 100%; padding: 12px 18px; font-size: 0.84rem; margin-bottom: 24px; }
-        .pricing-card.featured .pricing-cta { padding: 15px 18px; font-size: 0.9rem; }
+        .access-tier.featured .pricing-cta { padding: 15px 18px; font-size: 0.9rem; }
 
         .pricing-features { list-style: none; display: flex; flex-direction: column; gap: 11px; margin-top: auto; }
         .pricing-features li { display: flex; align-items: flex-start; gap: 9px; font-size: 0.84rem; color: rgba(255,255,255,0.82); line-height: 1.4; }
         .pricing-features [data-lucide] { width: 15px; height: 15px; color: #4fdc8e; flex-shrink: 0; margin-top: 2px; }
-        .pricing-card.featured .pricing-features li { font-size: 0.88rem; }
+        .access-tier.featured .pricing-features li { font-size: 0.88rem; }
 
         .verify-info-panel {
             display: flex; align-items: flex-start; gap: 20px;
@@ -832,9 +828,10 @@
         .verify-info-panel p { color: var(--text-muted); font-size: 0.88rem; line-height: 1.55; }
 
         @media (max-width: 900px) {
-            .pricing-grid { grid-template-columns: 1fr; }
-            .pricing-card.featured { order: -1; }
+            .pricing-grid, .access-tiers-grid { grid-template-columns: 1fr; }
+            .pricing-card.featured, .access-tier.featured { order: -1; }
             .verify-info-panel { flex-direction: column; gap: 14px; }
+            .access-banner-img { max-height: 320px; object-position: center 35%; }
         }
 
 
@@ -3024,10 +3021,12 @@
                     <div class="join-subtitle">Три способа получить доступ — выбери подходящий: быстрая проходка, вечный статус или бесплатный вход по лицензии.</div>
                 </div>
 
-                <div class="pricing-grid">
-                    <div class="pricing-card tier-permanent">
-                        <div class="pricing-watermark"><i data-lucide="infinity"></i></div>
-                        <div class="pricing-box-img"><img src="Kuromi_UNLIMITED3.png" alt="Постоянный безлимит — коробка пропуска"></div>
+                <div class="access-banner">
+                    <img src="Kuromi_Access.jpg" alt="Виды доступа на KuromiSMP — Unlimited, 30-Day и Free Access" class="access-banner-img">
+                </div>
+
+                <div class="access-tiers-grid">
+                    <div class="access-tier tier-permanent">
                         <div class="pricing-name" id="join-name-permanent">Постоянный безлимит «Навсегда»</div>
                         <div class="pricing-tagline" id="join-desc-permanent">Один платёж — и никаких продлений, взносов и вайпов на все будущие сезоны. Пропуск закрепляется за аккаунтом раз и навсегда.</div>
                         <div class="pricing-amount" id="join-price-permanent">349 ₽</div>
@@ -3039,10 +3038,8 @@
                         </ul>
                     </div>
 
-                    <div class="pricing-card featured">
-                        <div class="pricing-watermark"><i data-lucide="zap"></i></div>
+                    <div class="access-tier featured">
                         <div class="pricing-ribbon">Популярный выбор</div>
-                        <div class="pricing-box-img"><img src="Kuromi_30DAY2.png" alt="30-дневный пропуск — коробка"></div>
                         <div class="pricing-name" id="join-name-30d">Экспресс-пропуск «На 30 дней»</div>
                         <div class="pricing-tagline" id="join-desc-30d">Мгновенная автоматическая регистрация в WhiteList без анкет и ожидания. Действует 30 дней с момента активации.</div>
                         <div class="pricing-amount" id="join-price-30d">149 ₽</div>
@@ -3054,9 +3051,7 @@
                         </ul>
                     </div>
 
-                    <div class="pricing-card tier-free">
-                        <div class="pricing-watermark"><i data-lucide="clipboard-check"></i></div>
-                        <div class="pricing-box-img"><img src="Kuromi_FREE1.png" alt="Бесплатный доступ — коробка пропуска"></div>
+                    <div class="access-tier tier-free">
                         <div class="pricing-name">Бесплатный доступ</div>
                         <div class="pricing-tagline">Для обладателей официальной лицензии Minecraft — после проверки подлинности аккаунта. Базовый вход без доплат.</div>
                         <div class="pricing-amount">0 ₽</div>
