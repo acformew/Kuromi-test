@@ -3072,9 +3072,9 @@
                     <div class="mechanic-card" onclick="switchTab('mechanics')">
                         <div class="mechanic-img-box"><i data-lucide="link-2"></i></div>
                         <div class="mechanic-text-block">
-                            <span class="mechanic-label">Ролевая система</span>
-                            <h3>Арест и конвоирование</h3>
-                            <p>Задержание нарушителей с временными наручниками и РП-поводком.</p>
+                            <span class="mechanic-label">Как устроен сервер?</span>
+                            <h3>Wiki сервера</h3>
+                            <p>Оригинальные механики, меняющие геймплей. Объяснение как устроен сервер.</p>
                         </div>
                         <div class="mechanic-more">Узнать больше <i data-lucide="arrow-right"></i></div>
                     </div>
@@ -3091,8 +3091,8 @@
                         <div class="mechanic-img-box"><i data-lucide="infinity"></i></div>
                         <div class="mechanic-text-block">
                             <span class="mechanic-label">Доступ</span>
-                            <h3>Гибкий доступ</h3>
-                            <p>Постоянный, экспресс-пропуск на 30 дней или вход по лицензии.</p>
+                            <h3>Доступ на сервер</h3>
+                            <p>Два уровня тарифа, или вход по лицензии.</p>
                         </div>
                         <div class="mechanic-more">Узнать больше <i data-lucide="arrow-right"></i></div>
                     </div>
@@ -7993,7 +7993,7 @@ async function loadSectionVisibility() {
 
 function switchTab(tabName) {
     if (GATED_TAB_SECTIONS.includes(tabName) && !canAccessSection(tabName)) {
-        customAlert('🔒 Раздел скрыт', 'Этот раздел сейчас доступен только модераторам сервера.');
+        customAlert('🔒 Раздел скрыт', 'Этот раздел скоро откроется!');
         return;
     }
 
