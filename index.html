@@ -283,15 +283,32 @@
             color: #fff;
         }
 
-        /* Кнопка уведомлений — теперь обычный пункт левой панели навигации, не плавающий кружок */
+        /* Уведомления и чаты продаж — кружки, приколотые к самому низу левой панели */
+        .header-utility-row {
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+            width: 100%; padding: 4px 0 14px; flex-shrink: 0;
+        }
+        .header-circle-btn {
+            position: relative;
+            width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0;
+            display: none; align-items: center; justify-content: center;
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12);
+            color: var(--text-muted); cursor: pointer;
+            transition: color 0.18s ease, background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+        }
+        .header-circle-btn:hover { color: #fff; background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.28); transform: translateY(-2px); }
+        .header-circle-btn [data-lucide] { width: 18px; height: 18px; stroke-width: 1.8; }
         #bm-notif-btn.has-unread [data-lucide] { animation: bmBellRing 3s ease-in-out infinite; color: #ff5fa8; }
         @keyframes bmBellRing { 0%, 88%, 100% { transform: rotate(0); } 90% { transform: rotate(-12deg); } 92% { transform: rotate(10deg); } 94% { transform: rotate(-8deg); } 96% { transform: rotate(4deg); } }
-        .bm-notif-badge {
-            position: absolute; top: 3px; right: 10px;
-            background: #ff2f7e; color: #fff; font-size: 0.6rem; font-weight: 800;
-            min-width: 15px; height: 15px; padding: 0 4px; border-radius: 4px;
+        .header-circle-btn .bm-notif-badge {
+            position: absolute; top: -3px; right: -3px;
+            background: #ff2f7e; color: #fff; font-size: 0.58rem; font-weight: 800;
+            min-width: 15px; height: 15px; padding: 0 3px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 0 0 2px rgba(12,10,17,0.9);
+            box-shadow: 0 0 0 2px #0c0a11;
+        }
+        @media (max-width: 900px) {
+            .header-utility-row { flex-direction: row; width: auto; padding: 0 6px; gap: 8px; }
         }
 
         /* Всплывающие тосты о новых уведомлениях — снизу справа поверх всего сайта */
@@ -321,18 +338,21 @@
         #bm-notif-overlay {
             display: none; position: fixed; inset: 0; z-index: 20500;
             background: rgba(5, 3, 8, 0.75); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-            align-items: flex-end; justify-content: flex-end; padding: 20px 20px 100px;
+            align-items: flex-end; justify-content: flex-start; padding: 20px 20px 90px 100px;
         }
         #bm-notif-card {
             width: 100%; max-width: 380px; max-height: 60vh; overflow-y: auto;
             background: rgba(16, 11, 28, 0.98); border: 1px solid rgba(138, 43, 226, 0.25);
-            border-radius: 4px; box-shadow: 0 30px 70px rgba(0,0,0,0.6);
+            border-radius: 16px; box-shadow: 0 30px 70px rgba(0,0,0,0.6);
             padding: 18px;
         }
         #bm-notif-card .bm-notif-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding: 0 4px; }
         #bm-notif-card .bm-notif-head h3 { font-size: 1rem; color: #fff; display: flex; align-items: center; gap: 8px; }
         #bm-notif-card .bm-notif-head span.close { cursor: pointer; color: rgba(255,255,255,0.5); font-size: 1.3rem; line-height: 1; }
         #bm-notif-card .bm-notif-markall { font-size: 0.72rem; color: #b985f4; cursor: pointer; background: none; border: none; padding: 0; }
+        @media (max-width: 900px) {
+            #bm-notif-overlay { justify-content: center; padding: 20px 20px 90px; }
+        }
         .bm-notif-item {
             display: flex; gap: 10px; align-items: flex-start; padding: 12px; border-radius: 4px;
             margin-bottom: 6px; cursor: pointer; transition: background 0.15s ease;
@@ -2157,12 +2177,12 @@
         }
         #bm-chats-drawer-overlay.open { display: block; }
         #bm-chats-drawer {
-            position: fixed; right: -380px; top: 0; bottom: 0; width: 360px; z-index: 18600;
-            background: rgba(13,9,22,0.99); border-left: 1px solid rgba(138,43,226,0.3);
-            box-shadow: -10px 0 40px rgba(0,0,0,0.5); padding: 20px 14px; overflow-y: auto;
-            transition: right 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            position: fixed; left: -380px; top: 0; bottom: 0; width: 360px; z-index: 18600;
+            background: rgba(13,9,22,0.99); border-right: 1px solid rgba(138,43,226,0.3);
+            box-shadow: 10px 0 40px rgba(0,0,0,0.5); padding: 20px 14px; overflow-y: auto;
+            transition: left 0.25s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        #bm-chats-drawer.open { right: 0; }
+        #bm-chats-drawer.open { left: 0; }
         #bm-chats-drawer h3 { display: flex; align-items: center; gap: 8px; font-size: 1rem; color: #fff; margin-bottom: 4px; padding: 0 4px; }
         #bm-chats-drawer .sub { font-size: 0.72rem; color: var(--text-muted); padding: 0 4px; margin-bottom: 14px; }
         .bm-chat-list-item {
@@ -2314,19 +2334,6 @@
         }
         .map-side-panel::-webkit-scrollbar { display: none; }
         .map-side-spacer { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
-
-        .map-quick-actions { display: flex; gap: 6px; }
-        .map-quick-btn {
-            position: relative;
-            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
-            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted);
-            padding: 8px 4px; font-size: 0.6rem; font-weight: 600; cursor: pointer;
-            text-transform: uppercase; letter-spacing: 0.02em;
-            transition: all 0.15s ease;
-        }
-        .map-quick-btn:hover { color: #fff; background: rgba(255,255,255,0.08); }
-        .map-quick-btn [data-lucide] { width: 16px; height: 16px; }
-        .map-quick-btn.has-unread [data-lucide] { animation: bmBellRing 3s ease-in-out infinite; color: #ff5fa8; }
 
         .map-exit-btn {
             display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.05);
@@ -2901,6 +2908,96 @@
             .admin-card-grid { grid-template-columns: 1fr; }
             .player-search-bar { flex-direction: column; }
         }
+        /* ==========================================================================
+           ВОЗВРАТ СКРУГЛЁННЫХ КРАЁВ (везде, кроме явного вайтлиста квадратных зон)
+           Квадратными (4px) остаются без изменений: вики, боковая панель навигации,
+           админ-панель, меню выбора иконки фракции, сами МЕНЮ кошелька/пополнения,
+           карточки тарифов на "Доступ" (кроме блока верификации), главная страница
+           (кроме счётчика онлайна и кнопки "Начать выживание"), и сами тумблеры
+           "Топ игроков по балансу/по киллам".
+           ========================================================================== */
+
+        /* --- Главная: 2 явных исключения --- */
+        .hero-meta-tag { border-radius: 999px; }
+        #section-home .btn-primary { border-radius: 10px; }
+
+        /* --- Доступ: блок "Информация о верификации" --- */
+        .verify-info-panel { border-radius: 16px; }
+        .verify-info-icon { border-radius: 10px; }
+
+        /* --- Верхний правый виджет профиля/баланса (не является боковой панелью) --- */
+        .widget-login-btn, .widget-user-card, .widget-avatar,
+        #wallet-widget, #ruble-widget {
+            border-radius: 10px;
+        }
+
+        /* --- Игроки: возвращаем всё, кроме двух тумблеров топов --- */
+        #section-players .search-input { border-radius: 999px; }
+        #section-players .player-item-card { border-radius: 14px; }
+        #section-players .leaderboard-row { border-radius: 10px; }
+        #section-players .leaderboard-rank { border-radius: 10px; }
+
+        /* --- Профиль --- */
+        #section-profile .profile-banner-card { border-radius: 16px; }
+        .profile-avatar-ring, .profile-avatar-ring img { border-radius: 50%; }
+        #section-profile .btn-mini { border-radius: 8px; }
+        #section-profile .icon-badge, #section-profile .btn-primary, #section-profile .btn-secondary {
+            border-radius: 10px;
+        }
+        #color-picker-card, #cp-sv-panel, #cp-preview-swatch { border-radius: 14px; }
+        #cp-hue-slider { border-radius: 999px; }
+        #cp-hex-input, #cp-apply-btn { border-radius: 8px; }
+
+        /* --- Форум --- */
+        #section-forum .icon-badge, #section-forum .btn-primary, #section-forum .btn-secondary {
+            border-radius: 10px;
+        }
+        #section-forum .admin-subnav { border-radius: 999px; }
+        #section-forum .admin-subnav button { border-radius: 999px; }
+
+        /* --- Магазин привилегий (Донат) --- */
+        #section-donate .ticket-card, #section-donate .shop-item-card { border-radius: 16px; }
+        #section-donate .shop-item-index { border-radius: 8px; }
+        #section-donate .status-pill { border-radius: 999px; }
+        #section-donate .icon-badge, #section-donate .btn-primary, #section-donate .btn-secondary {
+            border-radius: 10px;
+        }
+
+        /* --- Заявка "Бесплатный доступ" --- */
+        #app-modal-card { border-radius: 16px; }
+        #app-modal-card .darknet-input, #app-modal-card .app-select-style { border-radius: 8px; }
+        #app-modal-card .btn-primary, #app-modal-card .btn-secondary, #app-submit-btn { border-radius: 10px; }
+
+        /* --- Торговая федерация (кроме уже квадратной плашки "Выставить лот") --- */
+        .darknet-input { border-radius: 8px; }
+        #custom-modal-input { border-radius: 4px; } /* внутри МЕНЮ пополнения — остаётся квадратным */
+        .darknet-form-box, .bounty-card, .bm-select-menu, .map-modal-card { border-radius: 14px; }
+        .bm-select-display, .bm-select-option, .bm-index-btn, .bm-tab, .bm-hint,
+        .bm-action-btn, .bm-exit-btn, .map-exit-btn, .bounty-tag, .bounty-status, .player-head-render {
+            border-radius: 8px;
+        }
+        #bm-chat-card, #bm-detail-card { border-radius: 16px; }
+        .bm-chat-item-strip, .bm-chat-deal-block, .bm-chat-list-item, .bm-detail-desc, .bm-detail-stat {
+            border-radius: 10px;
+        }
+        .bm-chat-progress-track, .bm-chat-progress-fill, .bm-chat-msg, #bm-chat-input, #bm-chat-send {
+            border-radius: 8px;
+        }
+        #bm-fullpage .icon-badge, #bm-fullpage .btn-primary, #bm-fullpage .btn-secondary {
+            border-radius: 10px;
+        }
+        .bm-toast, .bm-notif-item { border-radius: 10px; }
+
+        /* --- Карта --- */
+        #map-search-input, #map-search-btn, .map-cities-btn, .map-border-btn, .map-zoom-btn,
+        #map-claim-cta, #map-claim-banner, .map-cat-option, .map-city-item,
+        .map-field input, .map-field textarea, .map-info-cat-badge,
+        .map-btn-primary, .map-btn-ghost, .map-btn-danger {
+            border-radius: 10px;
+        }
+
+        /* --- Прочее --- */
+        .site-footer-links a { border-radius: 999px; }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -2923,14 +3020,17 @@
                 <i data-lucide="store"></i>
                 <span>Торговля</span>
             </button>
-            <button id="bm-notif-btn" class="bm-notif-trigger" onclick="openNotificationsPanel()" style="display:none;">
-                <i data-lucide="bell"></i><span>Увед.</span>
+        </nav>
+
+        <div class="header-utility-row">
+            <button id="bm-notif-btn" class="bm-notif-trigger header-circle-btn" onclick="openNotificationsPanel()" style="display:none;" title="Уведомления">
+                <i data-lucide="bell"></i>
                 <span class="bm-notif-badge" style="display:none;">0</span>
             </button>
-            <button id="bm-chats-tab" class="bm-chats-trigger" onclick="openChatsDrawer()" style="display:none;" title="Чаты продаж">
-                <i data-lucide="message-square"></i><span>Чаты</span>
+            <button id="bm-chats-tab" class="bm-chats-trigger header-circle-btn" onclick="openChatsDrawer()" style="display:none;" title="Чаты продаж">
+                <i data-lucide="message-square"></i>
             </button>
-        </nav>
+        </div>
     </header>
 
     <div class="content-container">
@@ -3019,7 +3119,7 @@
         <div id="section-join" class="content-section">
             <div class="bare-section">
                 <div class="access-banner">
-                    <img src="Kuromi_Access.jpg" alt="Виды доступа на KuromiSMP — Unlimited, 30-Day и Free Access" class="access-banner-img">
+                    <img src="Kuromi_Access.png" alt="Виды доступа на KuromiSMP — Unlimited, 30-Day и Free Access" class="access-banner-img">
                 </div>
 
                 <div class="access-tiers-grid">
@@ -3317,9 +3417,6 @@
                     <button class="bm-exit-btn" onclick="closeBlackMarket()"><i data-lucide="arrow-left"></i> Вернуться на сайт</button>
                 </div>
             <div class="bm-portal">
-                <div class="icon-pattern-layer pattern-soft" style="color:#fff;">
-                    <i data-lucide="package" style="width:18px;height:18px;margin:18px;transform:rotate(8deg);"></i><i data-lucide="hammer" style="width:20px;height:20px;margin:10px;transform:rotate(-16deg);"></i><i data-lucide="handshake" style="width:16px;height:16px;margin:16px;transform:rotate(14deg);"></i><i data-lucide="gem" style="width:20px;height:20px;margin:12px;transform:rotate(-6deg);"></i><i data-lucide="briefcase" style="width:16px;height:16px;margin:20px;transform:rotate(20deg);"></i><i data-lucide="package" style="width:22px;height:22px;margin:10px;transform:rotate(-20deg);"></i><i data-lucide="hammer" style="width:18px;height:18px;margin:14px;transform:rotate(12deg);"></i><i data-lucide="handshake" style="width:20px;height:20px;margin:8px;transform:rotate(-8deg);"></i><i data-lucide="gem" style="width:16px;height:16px;margin:18px;transform:rotate(15deg);"></i><i data-lucide="briefcase" style="width:18px;height:18px;margin:16px;transform:rotate(-14deg);"></i><i data-lucide="package" style="width:16px;height:16px;margin:12px;transform:rotate(18deg);"></i><i data-lucide="hammer" style="width:20px;height:20px;margin:20px;transform:rotate(-10deg);"></i><i data-lucide="handshake" style="width:18px;height:18px;margin:10px;transform:rotate(6deg);"></i><i data-lucide="gem" style="width:22px;height:22px;margin:14px;transform:rotate(-18deg);"></i><i data-lucide="briefcase" style="width:16px;height:16px;margin:18px;transform:rotate(10deg);"></i><i data-lucide="package" style="width:20px;height:20px;margin:8px;transform:rotate(-12deg);"></i><i data-lucide="hammer" style="width:16px;height:16px;margin:16px;transform:rotate(16deg);"></i><i data-lucide="handshake" style="width:22px;height:22px;margin:12px;transform:rotate(-4deg);"></i><i data-lucide="gem" style="width:18px;height:18px;margin:20px;transform:rotate(8deg);"></i><i data-lucide="briefcase" style="width:20px;height:20px;margin:10px;transform:rotate(-16deg);"></i><i data-lucide="package" style="width:16px;height:16px;margin:14px;transform:rotate(14deg);"></i><i data-lucide="hammer" style="width:18px;height:18px;margin:18px;transform:rotate(-6deg);"></i><i data-lucide="handshake" style="width:20px;height:20px;margin:16px;transform:rotate(20deg);"></i><i data-lucide="gem" style="width:16px;height:16px;margin:12px;transform:rotate(-20deg);"></i><i data-lucide="briefcase" style="width:22px;height:22px;margin:10px;transform:rotate(12deg);"></i><i data-lucide="package" style="width:18px;height:18px;margin:20px;transform:rotate(-8deg);"></i><i data-lucide="hammer" style="width:16px;height:16px;margin:8px;transform:rotate(15deg);"></i><i data-lucide="handshake" style="width:20px;height:20px;margin:18px;transform:rotate(-14deg);"></i><i data-lucide="gem" style="width:18px;height:18px;margin:14px;transform:rotate(18deg);"></i><i data-lucide="briefcase" style="width:16px;height:16px;margin:16px;transform:rotate(-10deg);"></i>
-                </div>
                 <div class="darknet-title" style="display:flex; align-items:center; gap:10px;"><span class="icon-badge b-purple" style="width:32px;height:32px;"><i data-lucide="store"></i></span> ТОРГОВАЯ ФЕДЕРАЦИЯ <span style="font-size:0.55em; opacity:0.45; font-weight:700; letter-spacing:0.08em;">· ТФ</span></div>
                 <div class="eyebrow" style="opacity: 0.7;">Торговая площадка · Биржа вакансий</div>
 
@@ -3431,16 +3528,6 @@
                         <i data-lucide="map" style="width:16px;height:16px;margin:10px;transform:rotate(-8deg);"></i><i data-lucide="compass" style="width:14px;height:14px;margin:14px;transform:rotate(10deg);"></i><i data-lucide="flag" style="width:15px;height:15px;margin:8px;transform:rotate(-14deg);"></i><i data-lucide="map" style="width:13px;height:13px;margin:16px;transform:rotate(16deg);"></i>
                     </div>
                     <button class="map-exit-btn" onclick="closeWorldMap()"><i data-lucide="arrow-left"></i> Вернуться на сайт</button>
-
-                    <div class="map-quick-actions">
-                        <button class="map-quick-btn bm-notif-trigger" id="map-notif-btn" onclick="openNotificationsPanel()" style="display:none; position:relative;">
-                            <i data-lucide="bell"></i><span>Увед.</span>
-                            <span class="bm-notif-badge" style="display:none;">0</span>
-                        </button>
-                        <button class="map-quick-btn bm-chats-trigger" id="map-chats-tab" onclick="openChatsDrawer()" style="display:none;" title="Чаты продаж">
-                            <i data-lucide="message-square"></i><span>Чаты</span>
-                        </button>
-                    </div>
 
                     <div id="map-search-row">
                         <input id="map-search-input" type="text" placeholder="X Z, напр. -1203 2051">
@@ -3654,9 +3741,6 @@
     <!-- Обновленное Премиум-окно (Выравнивание влево, адаптивные абзацы) -->
     <div id="custom-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 3, 8, 0.82); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); z-index: 20010; align-items: center; justify-content: center; padding: 20px;">
         <div id="custom-modal-card" style="background-image: linear-gradient(160deg, rgba(138,43,226,0.14), rgba(16,11,28,0.99) 55%), rgba(16, 11, 28, 0.98); border: 1px solid var(--primary-purple); border-radius: 4px; max-width: 500px; width: 100%; padding: 40px 34px; position: relative; overflow: hidden; box-shadow: 0 0 35px rgba(138, 43, 226, 0.25); text-align: center; font-family: var(--font-sans); color: #fff; transform: translateY(20px); opacity: 0; transition: all 0.25s cubic-bezier(0.15, 0.85, 0.35, 1);">
-            <div class="icon-pattern-layer pattern-soft" style="color:#b985f4;">
-                <i data-lucide="sparkles" style="width:18px;height:18px;margin:12px;transform:rotate(-10deg);"></i><i data-lucide="gem" style="width:22px;height:22px;margin:16px;transform:rotate(8deg);"></i><i data-lucide="star" style="width:16px;height:16px;margin:10px;transform:rotate(-16deg);"></i><i data-lucide="sparkles" style="width:20px;height:20px;margin:14px;transform:rotate(14deg);"></i><i data-lucide="gem" style="width:16px;height:16px;margin:8px;transform:rotate(-6deg);"></i><i data-lucide="star" style="width:20px;height:20px;margin:18px;transform:rotate(20deg);"></i><i data-lucide="sparkles" style="width:16px;height:16px;margin:10px;transform:rotate(-20deg);"></i><i data-lucide="gem" style="width:18px;height:18px;margin:12px;transform:rotate(10deg);"></i>
-            </div>
             <h3 id="custom-modal-title" style="position: relative; z-index: 1; font-size: 1.45rem; font-weight: 600; margin-bottom: 16px; line-height: 1.3; display: flex; align-items: center; justify-content: center; gap: 10px;"></h3>
             <div id="custom-modal-text" style="position: relative; z-index: 1; font-size: 1rem; color: rgba(255,255,255,0.85); line-height: 1.6; margin-bottom: 26px; text-align: center;"></div>
             <div id="custom-modal-input-container" style="position: relative; z-index: 1; display: none; width: 100%; margin-bottom: 24px;">
@@ -3668,10 +3752,7 @@
 
     <!-- Красивое интерактивное окно подачи Заявки/Анкеты -->
     <div id="app-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 3, 8, 0.85); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); z-index: 20001; align-items: center; justify-content: center; padding: 20px;">
-        <div id="app-modal-card" style="background: rgba(16, 11, 28, 0.98); border: 1px solid #2ecc71; border-radius: 4px; max-width: 500px; width: 100%; padding: 40px 35px; box-shadow: 0 0 40px rgba(46, 204, 113, 0.2); text-align: left; font-family: var(--font-sans); color: #fff; transform: translateY(30px) scale(0.95); opacity: 0; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);">
-            <div class="icon-pattern-layer pattern-strong" style="color:#5ee89a;">
-                <i data-lucide="pen-line" style="width:20px;height:20px;margin:10px;transform:rotate(-8deg);"></i><i data-lucide="scroll-text" style="width:26px;height:26px;margin:14px;transform:rotate(10deg);"></i><i data-lucide="check-check" style="width:18px;height:18px;margin:8px;transform:rotate(-14deg);"></i><i data-lucide="user-round-check" style="width:24px;height:24px;margin:12px;transform:rotate(6deg);"></i><i data-lucide="flower-2" style="width:20px;height:20px;margin:16px;transform:rotate(-4deg);"></i><i data-lucide="pen-line" style="width:16px;height:16px;margin:20px;transform:rotate(18deg);"></i><i data-lucide="scroll-text" style="width:18px;height:18px;margin:10px;transform:rotate(-20deg);"></i><i data-lucide="check-check" style="width:22px;height:22px;margin:14px;transform:rotate(12deg);"></i><i data-lucide="user-round-check" style="width:18px;height:18px;margin:8px;transform:rotate(-6deg);"></i><i data-lucide="flower-2" style="width:24px;height:24px;margin:18px;transform:rotate(15deg);"></i><i data-lucide="pen-line" style="width:22px;height:22px;margin:10px;transform:rotate(-10deg);"></i><i data-lucide="scroll-text" style="width:16px;height:16px;margin:12px;transform:rotate(20deg);"></i><i data-lucide="check-check" style="width:20px;height:20px;margin:16px;transform:rotate(-16deg);"></i><i data-lucide="user-round-check" style="width:20px;height:20px;margin:10px;transform:rotate(8deg);"></i><i data-lucide="flower-2" style="width:18px;height:18px;margin:14px;transform:rotate(-12deg);"></i>
-            </div>
+        <div id="app-modal-card" style="background: rgba(16, 11, 28, 0.98); border: 1px solid #2ecc71; border-radius: 16px; max-width: 500px; width: 100%; padding: 40px 35px; box-shadow: 0 0 40px rgba(46, 204, 113, 0.2); text-align: left; font-family: var(--font-sans); color: #fff; transform: translateY(30px) scale(0.95); opacity: 0; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);">
             <h3 style="font-size: 1.45rem; font-weight: 700; margin-bottom: 6px; color: #fff; display: flex; align-items: center; gap: 8px;"><i data-lucide="flower-2" style="width:20px;height:20px;color:#7be8a4;"></i> Бесплатный доступ</h3>
             <p style="font-size: 0.86rem; color: var(--text-muted); margin-bottom: 24px;">Анкета верификации для владельцев официальной Лицензии Minecraft.</p>
             
@@ -3701,8 +3782,8 @@
             </div>
 
             <div style="display: flex; gap: 12px; justify-content: flex-end; width: 100%;">
-                <button class="btn-secondary" style="padding: 12px 26px; border-radius: 4px; font-weight: 600;" onclick="closeApplicationModal()">Отмена</button>
-                <button id="app-submit-btn" class="btn-primary" style="padding: 12px 28px; border-radius: 4px; background:#2ecc71; box-shadow: 0 4px 15px rgba(46,204,113,0.25); font-weight: 700; transition: all 0.2s;" onclick="submitServerApplication()">Отправить анкету</button>
+                <button class="btn-secondary" style="padding: 12px 26px; border-radius: 10px; font-weight: 600;" onclick="closeApplicationModal()">Отмена</button>
+                <button id="app-submit-btn" class="btn-primary" style="padding: 12px 28px; border-radius: 10px; background:#2ecc71; box-shadow: 0 4px 15px rgba(46,204,113,0.25); font-weight: 700; transition: all 0.2s;" onclick="submitServerApplication()">Отправить анкету</button>
             </div>
         </div>
     </div>
@@ -6915,21 +6996,21 @@ async function loadSectionVisibility() {
                     
                     wrapper.innerHTML = `
                         <div style="width: 100%; text-align: left;">
-                            <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 25px; background: rgba(255,255,255,0.02); padding: 12px 20px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.04); justify-content: space-between;">
+                            <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 25px; background: rgba(255,255,255,0.02); padding: 12px 20px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.04); justify-content: space-between;">
                                 <div style="display: flex; align-items: center; gap: 14px;">
                                     <img src="${discordAvatarUrl}" style="width: 48px; height: 48px; border-radius: 50%; border: 2px solid #5865F2;">
                                     <div style="font-size: 1.1rem; font-weight: 600; color: var(--text-main);">${discordUsername} <span style="color: var(--text-muted); font-size: 0.85rem; font-weight: 400;">(Discord подключен)</span></div>
                                 </div>
-                                <button class="btn-secondary" style="padding: 8px 16px; font-size: 0.8rem; border-radius: 4px;" onclick="handleSignOut()">Выйти</button>
+                                <button class="btn-secondary" style="padding: 8px 16px; font-size: 0.8rem; border-radius: 10px;" onclick="handleSignOut()">Выйти</button>
                             </div>
-                            <div style="border: 1px solid rgba(138, 43, 226, 0.25); background: rgba(138, 43, 226, 0.02); border-radius: 4px; padding: 30px; width: 100%; margin-bottom: 25px;">
+                            <div style="border: 1px solid rgba(138, 43, 226, 0.25); background: rgba(138, 43, 226, 0.02); border-radius: 10px; padding: 30px; width: 100%; margin-bottom: 25px;">
                                 <h3 style="font-size: 1.3rem; font-weight: 600; color: #fff; margin-bottom: 20px; display:flex; align-items:center; gap:10px;"><i data-lucide="link-2" style="width:20px;height:20px;"></i> Привяжи Minecraft аккаунт</h3>
                                 <div style="display: flex; flex-direction: column; gap: 20px;">
                                     <div style="display: flex; gap: 16px; align-items: flex-start;">
                                         <div style="background: rgba(138, 43, 226, 0.15); color: #b388ff; font-weight: 700; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">1</div>
                                         <div>
                                             <span style="font-weight: 600; color: #fff; display: block; margin-bottom: 6px;"><i data-lucide="gamepad-2" style="width:14px;height:14px;vertical-align:-2px;"></i> Зайди на сервер</span>
-                                            <button class="btn-secondary" id="server-ip-profile" style="padding: 6px 14px; font-size: 0.78rem; border-radius: 4px;" onclick="copyIp('play.kuromi.tech')">play.kuromi.tech</button>
+                                            <button class="btn-secondary" id="server-ip-profile" style="padding: 6px 14px; font-size: 0.78rem; border-radius: 10px;" onclick="copyIp('play.kuromi.tech')">play.kuromi.tech</button>
                                         </div>
                                     </div>
                                     <div style="display: flex; gap: 16px; align-items: flex-start;">
@@ -7047,19 +7128,19 @@ async function loadSectionVisibility() {
                             </div>
                         </div>
                         <div class="stats-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 20px;">
-                            <div class="stat-card" style="background: rgba(255,255,255,0.03); border: 1px solid var(--line-soft); padding: 14px 16px; border-radius: 4px; text-align: left;">
+                            <div class="stat-card" style="background: rgba(255,255,255,0.03); border: 1px solid var(--line-soft); padding: 14px 16px; border-radius: 10px; text-align: left;">
                                 <div class="stat-label" style="font-size: 0.8rem; color: rgba(255,255,255,0.6); margin-bottom: 4px;"><i data-lucide="clock" style="width:13px;height:13px;display:inline;vertical-align:-2px;"></i> Время на сервере</div>
                                 <div class="stat-value" style="font-size: 1.4rem; font-weight: 700; color:#fff;">${formatPlaytime(currentStats.playtime_seconds)}</div>
                             </div>
-                            <div class="stat-card" style="background: rgba(255,255,255,0.03); border: 1px solid var(--line-soft); padding: 14px 16px; border-radius: 4px; text-align: left;">
+                            <div class="stat-card" style="background: rgba(255,255,255,0.03); border: 1px solid var(--line-soft); padding: 14px 16px; border-radius: 10px; text-align: left;">
                                 <div class="stat-label" style="font-size: 0.8rem; color: rgba(255,255,255,0.6); margin-bottom: 4px;"><i data-lucide="skull" style="width:13px;height:13px;display:inline;vertical-align:-2px;"></i> Смертей</div>
                                 <div class="stat-value" style="font-size: 1.4rem; font-weight: 700; color:#fff;">${currentStats.deaths}</div>
                             </div>
-                            <div class="stat-card" style="background: rgba(255,255,255,0.03); border: 1px solid var(--line-soft); padding: 14px 16px; border-radius: 4px; text-align: left;">
+                            <div class="stat-card" style="background: rgba(255,255,255,0.03); border: 1px solid var(--line-soft); padding: 14px 16px; border-radius: 10px; text-align: left;">
                                 <div class="stat-label" style="font-size: 0.8rem; color: rgba(255,255,255,0.6); margin-bottom: 4px;"><i data-lucide="swords" style="width:13px;height:13px;display:inline;vertical-align:-2px;"></i> Убийств</div>
                                 <div class="stat-value" style="font-size: 1.4rem; font-weight: 700; color:#fff;">${currentStats.kills}</div>
                             </div>
-                            <div class="stat-card" style="background: rgba(255,255,255,0.03); border: 1px solid var(--line-soft); padding: 14px 16px; border-radius: 4px; text-align: left;">
+                            <div class="stat-card" style="background: rgba(255,255,255,0.03); border: 1px solid var(--line-soft); padding: 14px 16px; border-radius: 10px; text-align: left;">
                                 <div class="stat-label" style="font-size: 0.8rem; color: #ffb0d9; margin-bottom: 4px;"><i data-lucide="bar-chart-2" style="width:13px;height:13px;display:inline;vertical-align:-2px;"></i> K/D</div>
                                 <div class="stat-value" style="font-size: 1.4rem; font-weight: 700; color: #ffb0d9;">${kd}</div>
                             </div>
@@ -7068,7 +7149,7 @@ async function loadSectionVisibility() {
                         <div style="margin-top: 22px; text-align: left;">
                             <div style="font-size: 0.8rem; color: rgba(255,255,255,0.6); margin-bottom: 8px;"><i data-lucide="pen-line" style="width:13px;height:13px;vertical-align:-2px;"></i> Описание профиля <span id="profile-bio-counter" style="color: rgba(255,255,255,0.4);">(${(currentCustom.bio || '').length}/40)</span></div>
                             <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                                <input type="text" id="profile-bio-input" maxlength="40" value="${escapeHtml(currentCustom.bio || '')}" placeholder="Например: топлю за красный террикон" oninput="document.getElementById('profile-bio-counter').textContent = '(' + this.value.length + '/40)'" style="flex:1; min-width:200px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.12); border-radius: 4px; padding: 9px 14px; color:#fff; font-family: var(--font-sans); font-size: 0.85rem; outline:none;">
+                                <input type="text" id="profile-bio-input" maxlength="40" value="${escapeHtml(currentCustom.bio || '')}" placeholder="Например: топлю за красный террикон" oninput="document.getElementById('profile-bio-counter').textContent = '(' + this.value.length + '/40)'" style="flex:1; min-width:200px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 9px 14px; color:#fff; font-family: var(--font-sans); font-size: 0.85rem; outline:none;">
                                 <button class="btn-mini save" style="padding: 9px 18px;" onclick="saveProfileBio()"><i data-lucide="check" style="width:14px;height:14px;"></i> Сохранить</button>
                             </div>
                         </div>
@@ -7767,7 +7848,7 @@ async function loadSectionVisibility() {
                         ${player.bio ? `<div style="font-size:0.8rem; color: var(--text-muted); font-style: italic; margin-bottom: 4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(player.bio)}</div>` : ''}
                         <div class="player-card-meta" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
                             <span style="display:inline-flex; align-items:center; gap:5px;"><i data-lucide="clock" style="width:12px;height:12px;"></i> ${formatPlaytime(player.playtime_seconds)}</span>
-                            <span style="display:inline-flex; align-items:center; gap:6px; font-size:0.78rem; font-weight:600; padding:3px 10px; border-radius:4px; background:${player.is_online ? 'rgba(46,204,113,0.14)' : 'rgba(110,100,130,0.14)'}; color:${statusColor};">
+                            <span style="display:inline-flex; align-items:center; gap:6px; font-size:0.78rem; font-weight:600; padding:3px 10px; border-radius: 10px; background:${player.is_online ? 'rgba(46,204,113,0.14)' : 'rgba(110,100,130,0.14)'}; color:${statusColor};">
                                 <span style="width:6px; height:6px; border-radius:50%; background:${statusColor}; ${player.is_online ? 'box-shadow: 0 0 6px #2ecc71;' : ''}"></span>
                                 ${player.is_online ? 'Онлайн' : 'Офлайн'}
                             </span>
@@ -7863,7 +7944,7 @@ async function loadSectionVisibility() {
             const preset = getGradientPreset(playerData.profile_gradient);
 
             modalOverlay.innerHTML = `
-                <div style="background: rgba(16, 11, 28, 0.95); border-radius: 4px; border: 1px solid rgba(138, 43, 226, 0.2); max-width: 520px; width: 100%; padding: 22px; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.6); font-family: var(--font-sans); color: #fff;">
+                <div style="background: rgba(16, 11, 28, 0.95); border-radius: 10px; border: 1px solid rgba(138, 43, 226, 0.2); max-width: 520px; width: 100%; padding: 22px; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.6); font-family: var(--font-sans); color: #fff;">
                     <span style="position: absolute; top: 30px; right: 35px; color: #fff; opacity: 0.6; font-size: 1.8rem; cursor: pointer; font-weight: bold; line-height: 1; z-index: 2;" onclick="disposeSkinViewer('skin-viewer-modal'); this.parentElement.parentElement.remove();">&times;</span>
 
                     <div class="profile-banner-card" style="--pf-gradient: ${preset.css}; --pf-accent: ${preset.accent};">
@@ -7881,19 +7962,19 @@ async function loadSectionVisibility() {
                         </div>
 
                         <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; width: 100%; margin: 20px 0;">
-                            <div style="background: rgba(0,0,0,0.18); border: 1px solid rgba(255,255,255,0.06); border-radius: 4px; padding: 16px; text-align: left;">
+                            <div style="background: rgba(0,0,0,0.18); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 16px; text-align: left;">
                                 <div style="font-size: 0.8rem; color: rgba(255,255,255,0.6); margin-bottom: 4px;"><i data-lucide="clock" style="width:13px;height:13px;display:inline;vertical-align:-2px;"></i> Время онлайна</div>
                                 <div style="font-size: 1.3rem; font-weight: 700; color: #fff;">${formatPlaytime(playerData.playtime_seconds)}</div>
                             </div>
-                            <div style="background: rgba(0,0,0,0.18); border: 1px solid rgba(255,255,255,0.06); border-radius: 4px; padding: 16px; text-align: left;">
+                            <div style="background: rgba(0,0,0,0.18); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 16px; text-align: left;">
                                 <div style="font-size: 0.8rem; color: rgba(255,255,255,0.6); margin-bottom: 4px;"><i data-lucide="skull" style="width:13px;height:13px;display:inline;vertical-align:-2px;"></i> Смертей</div>
                                 <div style="font-size: 1.3rem; font-weight: 700; color: #fff;">${deaths}</div>
                             </div>
-                            <div style="background: rgba(0,0,0,0.18); border: 1px solid rgba(255,255,255,0.06); border-radius: 4px; padding: 16px; text-align: left;">
+                            <div style="background: rgba(0,0,0,0.18); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 16px; text-align: left;">
                                 <div style="font-size: 0.8rem; color: rgba(255,255,255,0.6); margin-bottom: 4px;"><i data-lucide="swords" style="width:13px;height:13px;display:inline;vertical-align:-2px;"></i> Убийств</div>
                                 <div style="font-size: 1.3rem; font-weight: 700; color: #fff;">${kills}</div>
                             </div>
-                            <div style="background: rgba(0,0,0,0.18); border: 1px solid rgba(255,255,255,0.06); border-radius: 4px; padding: 16px; text-align: left;">
+                            <div style="background: rgba(0,0,0,0.18); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 16px; text-align: left;">
                                 <div style="font-size: 0.8rem; color: #ffb0d9; margin-bottom: 4px;"><i data-lucide="bar-chart-2" style="width:13px;height:13px;display:inline;vertical-align:-2px;"></i> K/D</div>
                                 <div style="font-size: 1.3rem; font-weight: 700; color: #ffb0d9;">${kd}</div>
                             </div>
@@ -8450,12 +8531,12 @@ function switchTab(tabName) {
 
             if (currentUserSession && currentUserLinkedData) {
                 container.innerHTML = `
-                    <div style="width: 100%; background: rgba(255, 255, 255, 0.015); border: 1px solid rgba(255, 255, 255, 0.06); padding: 24px; border-radius: 4px; text-align: left;">
+                    <div style="width: 100%; background: rgba(255, 255, 255, 0.015); border: 1px solid rgba(255, 255, 255, 0.06); padding: 24px; border-radius: 10px; text-align: left;">
                         <div style="display:flex; align-items:center; gap:10px; margin-bottom: 14px;">
                             <span class="icon-badge b-blue" style="width:32px;height:32px;"><i data-lucide="pen-line"></i></span>
                             <h3 style="font-size: 1.05rem; font-weight: 600; color: #fff;">Поделитесь новостью или мыслями</h3>
                         </div>
-                        <textarea id="forum-post-input" style="width: 100%; height: 110px; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 4px; padding: 14px; color: #fff; font-family: var(--font-sans); font-size: 0.95rem; resize: none; outline: none; margin-bottom: 12px; transition: border-color 0.2s;" placeholder="Что происходит на сервере?..." onfocus="this.style.borderColor='var(--primary-purple)'" onblur="this.style.borderColor='rgba(255, 255, 255, 0.06)'"></textarea>
+                        <textarea id="forum-post-input" style="width: 100%; height: 110px; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 10px; padding: 14px; color: #fff; font-family: var(--font-sans); font-size: 0.95rem; resize: none; outline: none; margin-bottom: 12px; transition: border-color 0.2s;" placeholder="Что происходит на сервере?..." onfocus="this.style.borderColor='var(--primary-purple)'" onblur="this.style.borderColor='rgba(255, 255, 255, 0.06)'"></textarea>
                         <div style="display: flex; justify-content: flex-end;">
                             <button class="btn-primary" style="padding: 10px 24px; font-size: 0.85rem;" onclick="createForumPost()">Опубликовать</button>
                         </div>
@@ -8463,7 +8544,7 @@ function switchTab(tabName) {
                 `;
             } else {
                 container.innerHTML = `
-                    <div style="width: 100%; background: rgba(138, 43, 226, 0.02); border: 1px solid rgba(138, 43, 226, 0.15); padding: 20px; border-radius: 4px; text-align: center; color: var(--text-muted); font-size: 0.95rem; font-weight: 500;">
+                    <div style="width: 100%; background: rgba(138, 43, 226, 0.02); border: 1px solid rgba(138, 43, 226, 0.15); padding: 20px; border-radius: 10px; text-align: center; color: var(--text-muted); font-size: 0.95rem; font-weight: 500;">
                         <i data-lucide="lock" style="width:15px;height:15px;vertical-align:-2px;"></i> Войди и привяжи Minecraft, чтобы публиковать посты.
                     </div>
                 `;
@@ -8605,7 +8686,7 @@ function switchTab(tabName) {
                 const authorAccent = getGradientPreset(forumAuthorGradients[post.minecraft_uuid]).accent;
 
                 const deleteBtnHtml = isUserModerator ? `
-                    <button style="background: rgba(255, 0, 127, 0.1); border: 1px solid rgba(255, 0, 127, 0.2); color: var(--accent-pink); padding: 6px 14px; border-radius: 4px; font-family: var(--font-sans); font-size: 0.75rem; cursor: pointer; transition: all 0.2s;" onclick="deletePost('${post.id}')">Удалить</button>
+                    <button style="background: rgba(255, 0, 127, 0.1); border: 1px solid rgba(255, 0, 127, 0.2); color: var(--accent-pink); padding: 6px 14px; border-radius: 10px; font-family: var(--font-sans); font-size: 0.75rem; cursor: pointer; transition: all 0.2s;" onclick="deletePost('${post.id}')">Удалить</button>
                 ` : '';
 
                 function renderCommentItem(comm) {
@@ -8615,9 +8696,9 @@ function switchTab(tabName) {
                     const commAccent = getGradientPreset(forumAuthorGradients[comm.minecraft_uuid]).accent;
 
                     return `
-                        <div style="display: flex; gap: 12px; background: rgba(0, 0, 0, 0.15); padding: 12px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.02); align-items: flex-start; margin-bottom: 8px;">
-                            <div class="profile-avatar-ring" style="--pf-accent: ${commAccent}; padding: 2px; border-radius: 4px; cursor: pointer; flex-shrink: 0;" onclick="openPlayerModal('${comm.minecraft_uuid}', '${comm.minecraft_name}')">
-                                <img src="https://mc-heads.net/avatar/${comm.minecraft_name}/48" style="width: 24px; height: 24px; border-radius: 4px; display:block;">
+                        <div style="display: flex; gap: 12px; background: rgba(0, 0, 0, 0.15); padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.02); align-items: flex-start; margin-bottom: 8px;">
+                            <div class="profile-avatar-ring" style="--pf-accent: ${commAccent}; padding: 2px; border-radius: 50%; cursor: pointer; flex-shrink: 0;" onclick="openPlayerModal('${comm.minecraft_uuid}', '${comm.minecraft_name}')">
+                                <img src="https://mc-heads.net/avatar/${comm.minecraft_name}/48" style="width: 24px; height: 24px; border-radius: 50%; display:block;">
                             </div>
                             <div style="display: flex; flex-direction: column; text-align: left; width: 100%; overflow: hidden;">
                                 <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; width: 100%;">
@@ -8657,13 +8738,13 @@ function switchTab(tabName) {
                     const savedInputText = typedTexts[post.id] ? typedTexts[post.id].replace(/"/g, '&quot;') : '';
                     commentInputFormHtml = `
                         <div style="display: flex; gap: 10px; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.04); padding-top: 15px;">
-                            <input type="text" id="comment-input-${post.id}" style="flex: 1; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.05); border-radius: 4px; padding: 10px 14px; color: #fff; font-family: var(--font-sans); font-size: 0.88rem; outline: none;" placeholder="Написать ответ..." value="${savedInputText}">
-                            <button class="btn-primary" style="padding: 8px 18px; font-size: 0.82rem; border-radius: 4px;" data-action="submit-comment" data-post-id="${post.id}">Ответить</button>
+                            <input type="text" id="comment-input-${post.id}" style="flex: 1; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.05); border-radius: 10px; padding: 10px 14px; color: #fff; font-family: var(--font-sans); font-size: 0.88rem; outline: none;" placeholder="Написать ответ..." value="${savedInputText}">
+                            <button class="btn-primary" style="padding: 8px 18px; font-size: 0.82rem; border-radius: 10px;" data-action="submit-comment" data-post-id="${post.id}">Ответить</button>
                         </div>
                     `;
                 } else {
                     commentInputFormHtml = `
-                        <div style="color: var(--text-muted); font-size: 0.8rem; margin-top: 12px; text-align: center; background: rgba(255,255,255,0.01); padding: 10px; border-radius: 4px; border: 1px dashed rgba(255,255,255,0.03);">
+                        <div style="color: var(--text-muted); font-size: 0.8rem; margin-top: 12px; text-align: center; background: rgba(255,255,255,0.01); padding: 10px; border-radius: 10px; border: 1px dashed rgba(255,255,255,0.03);">
                             Авторизуйтесь, чтобы участвовать в обсуждении.
                         </div>
                     `;
@@ -8686,8 +8767,8 @@ function switchTab(tabName) {
                     ${buildIconPatternLayer(['message-square', 'heart', 'sparkles', 'flame'], { count: 22, size: 18 })}
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px;">
                         <div style="display: flex; align-items: center; gap: 14px;">
-                            <div class="profile-avatar-ring" style="--pf-accent: ${authorAccent}; padding: 2px; border-radius: 4px; cursor: pointer; flex-shrink: 0;" onclick="openPlayerModal('${post.minecraft_uuid}', '${post.minecraft_name}')">
-                                <img src="https://mc-heads.net/avatar/${post.minecraft_name}/72" style="width: 36px; height: 36px; border-radius: 4px; display:block;">
+                            <div class="profile-avatar-ring" style="--pf-accent: ${authorAccent}; padding: 2px; border-radius: 50%; cursor: pointer; flex-shrink: 0;" onclick="openPlayerModal('${post.minecraft_uuid}', '${post.minecraft_name}')">
+                                <img src="https://mc-heads.net/avatar/${post.minecraft_name}/72" style="width: 36px; height: 36px; border-radius: 50%; display:block;">
                             </div>
                             <div>
                                 <h4 style="font-size: 0.98rem; font-weight: 600; color: #fff; cursor: pointer;" onclick="openPlayerModal('${post.minecraft_uuid}', '${post.minecraft_name}')">${post.minecraft_name}</h4>
@@ -8699,15 +8780,15 @@ function switchTab(tabName) {
                     <p style="font-size: 0.94rem; color: rgba(255,255,255,0.9); line-height: 1.55; white-space: pre-wrap; word-break: break-word; margin-bottom: 20px;">${post.content}</p>
                     
                     <div style="display: flex; gap: 12px; align-items: center;">
-                        <button id="like-btn-${post.id}" style="display: flex; align-items: center; gap: 8px; background: ${activeLikeBg}; border: 1px solid rgba(255,255,255,0.03); color: ${activeLikeColor}; padding: 8px 16px; border-radius: 4px; font-family: var(--font-sans); font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;" onclick="toggleLike('${post.id}', event)">
+                        <button id="like-btn-${post.id}" style="display: flex; align-items: center; gap: 8px; background: ${activeLikeBg}; border: 1px solid rgba(255,255,255,0.03); color: ${activeLikeColor}; padding: 8px 16px; border-radius: 10px; font-family: var(--font-sans); font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;" onclick="toggleLike('${post.id}', event)">
                             <i data-lucide="heart" style="width:14px;height:14px;vertical-align:-2px;"></i> <span>${post.likes_count ?? 0}</span>
                         </button>
-                        <button style="display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); color: var(--text-muted); padding: 8px 16px; border-radius: 4px; font-family: var(--font-sans); font-size: 0.85rem; font-weight: 500; cursor: pointer; transition: all 0.2s;" onclick="toggleCommentsDisplay('${post.id}')">
+                        <button style="display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); color: var(--text-muted); padding: 8px 16px; border-radius: 10px; font-family: var(--font-sans); font-size: 0.85rem; font-weight: 500; cursor: pointer; transition: all 0.2s;" onclick="toggleCommentsDisplay('${post.id}')">
                             Ответы <i data-lucide="messages-square" style="width:13px;height:13px;vertical-align:-2px;"></i> (<span>${postComments.length}</span>)
                         </button>
                     </div>
 
-                    <div id="comments-container-${post.id}" style="display: ${boxDisplayStyle}; background: rgba(5, 3, 8, 0.4); border-radius: 4px; padding: 16px; border: 1px solid rgba(255,255,255,0.02); margin-top: 14px;">
+                    <div id="comments-container-${post.id}" style="display: ${boxDisplayStyle}; background: rgba(5, 3, 8, 0.4); border-radius: 10px; padding: 16px; border: 1px solid rgba(255,255,255,0.02); margin-top: 14px;">
                         <div id="comments-list-${post.id}" style="max-height: 280px; overflow-y: auto; padding-right: 4px;" class="wallet-scroll">
                             ${commentsListHtml || '<div style="color: var(--text-muted); font-size: 0.82rem; text-align: center; padding: 15px 0;">Комментариев нет. Оставьте свой ответ первым!</div>'}
                         </div>
@@ -9644,7 +9725,7 @@ async function saveSectionVisibility(key, value) {
                     const isBig = item.category === 'pass_permanent';
                     const soonChip = soon ? '<span class="status-pill soon" style="margin-left:8px; cursor:default;"><i data-lucide="clock"></i>Скоро</span>' : '';
                     html += `
-                        <div class="ticket-card" style="padding: 20px 25px; border-radius: 4px; ${isBig ? 'grid-column: span 2;' : ''}">
+                        <div class="ticket-card" style="padding: 20px 25px; border-radius: 10px; ${isBig ? 'grid-column: span 2;' : ''}">
                             <div class="ticket-info">
                                 <h3 style="display:flex; align-items:center; flex-wrap:wrap;">${escapeHtml(item.name)}${soonChip}</h3>
                                 <p>${escapeHtml(item.description || '')}</p>
@@ -9667,23 +9748,23 @@ async function saveSectionVisibility(key, value) {
             const container = document.getElementById('shop-front-container');
             if (!container) return;
             container.innerHTML = `
-                <div class="ticket-card" style="padding: 20px 25px; border-radius: 4px; grid-column: span 2;">
+                <div class="ticket-card" style="padding: 20px 25px; border-radius: 10px; grid-column: span 2;">
                     <div class="ticket-info"><h3>Пропуск «Навсегда»</h3><p>Полноценный вечный доступ на сервер без ограничений по сезонам.</p></div>
                     <div><div class="ticket-price" style="font-size: 1.15rem;">349 ₽</div><button class="btn-primary" style="padding: 8px 16px; font-size: 0.8rem; margin-top: 10px; width: 100%;" onclick="buyServerPass(349)">Купить</button></div>
                 </div>
-                <div class="ticket-card" style="padding: 20px 25px; border-radius: 4px;">
+                <div class="ticket-card" style="padding: 20px 25px; border-radius: 10px;">
                     <div class="ticket-info"><h3>Инспектор (CoreProtect)</h3><p>Доступ к логированию действий /co i. Узнай, кто украл ресурсы или сломал постройку.</p></div>
                     <div><div class="ticket-price" style="font-size: 1.15rem;">249 ₽</div><button class="btn-primary" style="padding: 8px 16px; font-size: 0.8rem; margin-top: 10px; width: 100%;" onclick="buyPrivilege('Инспектор (CoreProtect)', 249)">Купить</button></div>
                 </div>
-                <div class="ticket-card" style="padding: 20px 25px; border-radius: 4px;">
+                <div class="ticket-card" style="padding: 20px 25px; border-radius: 10px;">
                     <div class="ticket-info"><h3>Полицейский пропуск</h3><p>Разрешение на арест нарушителей. Веди преступников за собой на поводке.</p></div>
                     <div><div class="ticket-price" style="font-size: 1.15rem;">199 ₽</div><button class="btn-primary" style="padding: 8px 16px; font-size: 0.8rem; margin-top: 10px; width: 100%;" onclick="buyPrivilege('Полицейский пропуск', 199)">Купить</button></div>
                 </div>
-                <div class="ticket-card" style="padding: 20px 25px; border-radius: 4px;">
+                <div class="ticket-card" style="padding: 20px 25px; border-radius: 10px;">
                     <div class="ticket-info"><h3>Маска Анонимуса</h3><p>Уникальный РП-предмет. Полностью скрывает твой оригинальный никнейм на сервере.</p></div>
                     <div><div class="ticket-price" style="font-size: 1.15rem;">129 ₽</div><button class="btn-primary" style="padding: 8px 16px; font-size: 0.8rem; margin-top: 10px; width: 100%;" onclick="buyPrivilege('Маска Анонимуса', 129)">Купить</button></div>
                 </div>
-                <div class="ticket-card" style="padding: 20px 25px; border-radius: 4px;">
+                <div class="ticket-card" style="padding: 20px 25px; border-radius: 10px;">
                     <div class="ticket-info"><h3>Загробный кастом</h3><p>Уникальный звук, частицы дыма и замена текста о твоей смерти в глобальном чате.</p></div>
                     <div><div class="ticket-price" style="font-size: 1.15rem;">99 ₽</div><button class="btn-primary" style="padding: 8px 16px; font-size: 0.8rem; margin-top: 10px; width: 100%;" onclick="buyPrivilege('Загробный кастом', 99)">Купить</button></div>
                 </div>
@@ -9789,7 +9870,7 @@ async function saveSectionVisibility(key, value) {
                     balanceBox.innerHTML = rows.length ? rows.map((p, i) => `
                         <div class="leaderboard-row">
                             <div class="leaderboard-rank">${i + 1}</div>
-                            <img src="https://mc-heads.net/avatar/${nameMap[p.minecraft_uuid].minecraft_name}/56" style="width:28px;height:28px;border-radius:4px;">
+                            <img src="https://mc-heads.net/avatar/${nameMap[p.minecraft_uuid].minecraft_name}/56" style="width:28px;height:28px;border-radius:${prefix === 'admin' ? '4px' : '8px'};">
                             <div style="flex:1; font-weight:600; font-size:0.88rem;">${escapeHtml(nameMap[p.minecraft_uuid].minecraft_name)}</div>
                             <div style="font-weight:700; color:#ffb95c;">${p.currency_balance ?? 0}</div>
                         </div>`).join('') : `<div style="color:var(--text-muted); padding:10px;">Нет данных</div>`;
@@ -9802,7 +9883,7 @@ async function saveSectionVisibility(key, value) {
                     killsBox.innerHTML = rows.length ? rows.map((p, i) => `
                         <div class="leaderboard-row">
                             <div class="leaderboard-rank">${i + 1}</div>
-                            <img src="https://mc-heads.net/avatar/${nameMap[p.minecraft_uuid].minecraft_name}/56" style="width:28px;height:28px;border-radius:4px;">
+                            <img src="https://mc-heads.net/avatar/${nameMap[p.minecraft_uuid].minecraft_name}/56" style="width:28px;height:28px;border-radius:${prefix === 'admin' ? '4px' : '8px'};">
                             <div style="flex:1; font-weight:600; font-size:0.88rem;">${escapeHtml(nameMap[p.minecraft_uuid].minecraft_name)}</div>
                             <div style="font-weight:700; color:#ff7b6e;">${p.kills ?? 0}</div>
                         </div>`).join('') : `<div style="color:var(--text-muted); padding:10px;">Нет данных</div>`;
