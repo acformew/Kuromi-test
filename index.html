@@ -8684,26 +8684,26 @@ function switchTab(tabName) {
                 const authorAccent = getGradientPreset(forumAuthorGradients[post.minecraft_uuid]).accent;
 
                 const deleteBtnHtml = isUserModerator ? `
-                    <button style="background: rgba(255, 0, 127, 0.1); border: 1px solid rgba(255, 0, 127, 0.2); color: var(--accent-pink); padding: 6px 14px; border-radius: 10px; font-family: var(--font-sans); font-size: 0.75rem; cursor: pointer; transition: all 0.2s;" onclick="deletePost('${post.id}')">Удалить</button>
+                    <button style="background: rgba(255, 0, 127, 0.1); border: 1px solid rgba(255, 0, 127, 0.2); color: var(--accent-pink); padding: 7px 16px; border-radius: 10px; font-family: var(--font-sans); font-size: 0.82rem; cursor: pointer; transition: all 0.2s;" onclick="deletePost('${post.id}')">Удалить</button>
                 ` : '';
 
                 function renderCommentItem(comm) {
                     const commDeleteBtn = isUserModerator ? `
-                        <span style="color: var(--accent-pink); cursor: pointer; font-size: 0.75rem; margin-left: auto;" onclick="deleteComment('${comm.id}')">Удалить</span>
+                        <span style="color: var(--accent-pink); cursor: pointer; font-size: 0.8rem; margin-left: auto;" onclick="deleteComment('${comm.id}')">Удалить</span>
                     ` : '';
 
                     return `
-                        <div style="display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); align-items: flex-start;">
+                        <div style="display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05); align-items: flex-start;">
                             <div style="cursor: pointer; flex-shrink: 0;" onclick="openPlayerModal('${comm.minecraft_uuid}', '${comm.minecraft_name}')">
-                                ${renderPlayerFaceAvatar(comm.minecraft_name, null, 28)}
+                                ${renderPlayerFaceAvatar(comm.minecraft_name, null, 36)}
                             </div>
                             <div style="display: flex; flex-direction: column; text-align: left; width: 100%; overflow: hidden;">
                                 <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; width: 100%;">
-                                    <span style="font-size: 0.8rem; font-weight: 600; color: #fff; cursor: pointer;" onclick="openPlayerModal('${comm.minecraft_uuid}', '${comm.minecraft_name}')">${comm.minecraft_name}</span>
-                                    <span style="font-size: 0.7rem; color: var(--text-muted);">${formatDate(comm.created_at)}</span>
+                                    <span style="font-size: 0.92rem; font-weight: 600; color: #fff; cursor: pointer;" onclick="openPlayerModal('${comm.minecraft_uuid}', '${comm.minecraft_name}')">${comm.minecraft_name}</span>
+                                    <span style="font-size: 0.8rem; color: var(--text-muted);">${formatDate(comm.created_at)}</span>
                                     ${commDeleteBtn}
                                 </div>
-                                <div style="font-size: 0.85rem; color: rgba(255, 255, 255, 0.85); margin-top: 4px; word-break: break-word; line-height: 1.4;">${comm.content}</div>
+                                <div style="font-size: 0.95rem; color: rgba(255, 255, 255, 0.88); margin-top: 5px; word-break: break-word; line-height: 1.5;">${comm.content}</div>
                             </div>
                         </div>
                     `;
@@ -8735,13 +8735,13 @@ function switchTab(tabName) {
                     const savedInputText = typedTexts[post.id] ? typedTexts[post.id].replace(/"/g, '&quot;') : '';
                     commentInputFormHtml = `
                         <div style="display: flex; gap: 10px; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.04); padding-top: 15px;">
-                            <input type="text" id="comment-input-${post.id}" style="flex: 1; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.05); border-radius: 10px; padding: 10px 14px; color: #fff; font-family: var(--font-sans); font-size: 0.88rem; outline: none;" placeholder="Написать ответ..." value="${savedInputText}">
-                            <button class="btn-primary" style="padding: 8px 18px; font-size: 0.82rem; border-radius: 10px;" data-action="submit-comment" data-post-id="${post.id}">Ответить</button>
+                            <input type="text" id="comment-input-${post.id}" style="flex: 1; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.05); border-radius: 10px; padding: 11px 15px; color: #fff; font-family: var(--font-sans); font-size: 0.95rem; outline: none;" placeholder="Написать ответ..." value="${savedInputText}">
+                            <button class="btn-primary" style="padding: 9px 20px; font-size: 0.9rem; border-radius: 10px;" data-action="submit-comment" data-post-id="${post.id}">Ответить</button>
                         </div>
                     `;
                 } else {
                     commentInputFormHtml = `
-                        <div style="color: var(--text-muted); font-size: 0.8rem; margin-top: 12px; text-align: center; background: rgba(255,255,255,0.01); padding: 10px; border-radius: 10px; border: 1px dashed rgba(255,255,255,0.03);">
+                        <div style="color: var(--text-muted); font-size: 0.88rem; margin-top: 12px; text-align: center; background: rgba(255,255,255,0.01); padding: 10px; border-radius: 10px; border: 1px dashed rgba(255,255,255,0.03);">
                             Авторизуйтесь, чтобы участвовать в обсуждении.
                         </div>
                     `;
@@ -8756,32 +8756,32 @@ function switchTab(tabName) {
                 card.style.textAlign = 'left';
 
                 card.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px;">
-                        <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                        <div style="display: flex; align-items: center; gap: 14px;">
                             <div style="cursor: pointer; flex-shrink: 0;" onclick="openPlayerModal('${post.minecraft_uuid}', '${post.minecraft_name}')">
-                                ${renderPlayerFaceAvatar(post.minecraft_name, null, 38)}
+                                ${renderPlayerFaceAvatar(post.minecraft_name, null, 48)}
                             </div>
                             <div>
-                                <h4 style="font-size: 0.95rem; font-weight: 600; color: #fff; cursor: pointer;" onclick="openPlayerModal('${post.minecraft_uuid}', '${post.minecraft_name}')">${post.minecraft_name}</h4>
-                                <span style="font-size: 0.75rem; color: var(--text-muted);">${formatDate(post.created_at)}</span>
+                                <h4 style="font-size: 1.1rem; font-weight: 600; color: #fff; cursor: pointer;" onclick="openPlayerModal('${post.minecraft_uuid}', '${post.minecraft_name}')">${post.minecraft_name}</h4>
+                                <span style="font-size: 0.85rem; color: var(--text-muted);">${formatDate(post.created_at)}</span>
                             </div>
                         </div>
                         ${deleteBtnHtml}
                     </div>
-                    <p style="font-size: 0.92rem; color: rgba(255,255,255,0.88); line-height: 1.55; white-space: pre-wrap; word-break: break-word; margin-bottom: 16px;">${post.content}</p>
+                    <p style="font-size: 1.05rem; color: rgba(255,255,255,0.9); line-height: 1.6; white-space: pre-wrap; word-break: break-word; margin-bottom: 18px;">${post.content}</p>
 
-                    <div style="display: flex; gap: 20px; align-items: center; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px;">
-                        <button id="like-btn-${post.id}" style="display: flex; align-items: center; gap: 6px; background: none; border: none; color: ${activeLikeColor}; padding: 0; font-family: var(--font-sans); font-size: 0.85rem; font-weight: 500; cursor: pointer;" onclick="toggleLike('${post.id}', event)">
-                            <i data-lucide="heart" style="width:15px;height:15px;"></i> <span>${post.likes_count ?? 0}</span>
+                    <div style="display: flex; gap: 24px; align-items: center; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 14px;">
+                        <button id="like-btn-${post.id}" style="display: flex; align-items: center; gap: 7px; background: none; border: none; color: ${activeLikeColor}; padding: 0; font-family: var(--font-sans); font-size: 0.98rem; font-weight: 500; cursor: pointer;" onclick="toggleLike('${post.id}', event)">
+                            <i data-lucide="heart" style="width:19px;height:19px;"></i> <span>${post.likes_count ?? 0}</span>
                         </button>
-                        <button style="display: flex; align-items: center; gap: 6px; background: none; border: none; color: var(--text-muted); padding: 0; font-family: var(--font-sans); font-size: 0.85rem; font-weight: 500; cursor: pointer;" onclick="toggleCommentsDisplay('${post.id}')">
-                            <i data-lucide="messages-square" style="width:14px;height:14px;"></i> <span>${postComments.length}</span>
+                        <button style="display: flex; align-items: center; gap: 7px; background: none; border: none; color: var(--text-muted); padding: 0; font-family: var(--font-sans); font-size: 0.98rem; font-weight: 500; cursor: pointer;" onclick="toggleCommentsDisplay('${post.id}')">
+                            <i data-lucide="messages-square" style="width:18px;height:18px;"></i> <span>${postComments.length}</span>
                         </button>
                     </div>
 
-                    <div id="comments-container-${post.id}" style="display: ${boxDisplayStyle}; background: rgba(0,0,0,0.15); border-radius: 10px; padding: 14px; border: 1px solid rgba(255,255,255,0.04); margin-top: 14px;">
-                        <div id="comments-list-${post.id}" style="max-height: 280px; overflow-y: auto; padding-right: 4px;" class="wallet-scroll">
-                            ${commentsListHtml || '<div style="color: var(--text-muted); font-size: 0.82rem; text-align: center; padding: 15px 0;">Комментариев нет. Оставьте свой ответ первым!</div>'}
+                    <div id="comments-container-${post.id}" style="display: ${boxDisplayStyle}; background: rgba(0,0,0,0.15); border-radius: 10px; padding: 16px; border: 1px solid rgba(255,255,255,0.04); margin-top: 16px;">
+                        <div id="comments-list-${post.id}" style="max-height: 320px; overflow-y: auto; padding-right: 4px;" class="wallet-scroll">
+                            ${commentsListHtml || '<div style="color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 15px 0;">Комментариев нет. Оставьте свой ответ первым!</div>'}
                         </div>
                         ${commentInputFormHtml}
                     </div>
