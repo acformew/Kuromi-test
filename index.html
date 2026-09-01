@@ -197,6 +197,11 @@
         }
         nav button [data-lucide] { width: 18px; height: 18px; }
 
+        /* Разделы, доступ к которым регулируется таблицей site_sections, скрыты
+           по умолчанию средствами CSS — чтобы их не было видно ни на миллисекунду
+           до завершения проверки прав, даже при медленном или нестабильном интернете. */
+        .gated-nav-hidden { display: none !important; }
+
         nav button:hover {
             color: var(--text-main);
             background: rgba(255,255,255,0.04);
@@ -883,7 +888,7 @@
 
         .profile-avatar-ring {
             padding: 3px;
-            border-radius: 8px;
+            border-radius: 9px;
             border: 2px solid var(--pf-accent, rgba(138, 43, 226, 0.5));
             flex-shrink: 0;
             display: inline-flex;
@@ -3010,11 +3015,11 @@
 
         <nav>
             <button id="tab-home" class="active" onclick="switchTab('home')"><i data-lucide="home"></i><span>Главная</span></button>
-            <button id="tab-join" onclick="switchTab('join')"><i data-lucide="door-open"></i><span>Доступ</span></button>
-            <button id="tab-players" onclick="switchTab('players')"><i data-lucide="users"></i><span>Игроки</span></button>
-            <button id="tab-mechanics" onclick="switchTab('mechanics')"><i data-lucide="book-open"></i><span>Вики</span></button>
-            <button id="tab-map" onclick="openWorldMap()"><i data-lucide="map"></i><span>Карта</span></button>
-            <button id="tab-donate" onclick="switchTab('donate')"><i data-lucide="shopping-bag"></i><span>Магазин</span></button>
+            <button id="tab-join" class="gated-nav-hidden" onclick="switchTab('join')"><i data-lucide="door-open"></i><span>Доступ</span></button>
+            <button id="tab-players" class="gated-nav-hidden" onclick="switchTab('players')"><i data-lucide="users"></i><span>Игроки</span></button>
+            <button id="tab-mechanics" class="gated-nav-hidden" onclick="switchTab('mechanics')"><i data-lucide="book-open"></i><span>Вики</span></button>
+            <button id="tab-map" class="gated-nav-hidden" onclick="openWorldMap()"><i data-lucide="map"></i><span>Карта</span></button>
+            <button id="tab-donate" class="gated-nav-hidden" onclick="switchTab('donate')"><i data-lucide="shopping-bag"></i><span>Магазин</span></button>
             <button id="bm-trigger-logo" onclick="openBlackMarket()" title="Торговая федерация">
                 <i data-lucide="store"></i>
                 <span>Торговля</span>
@@ -3036,7 +3041,7 @@
         <div class="header-profile-sidebar">
             <div id="header-profile-auth" style="display: flex; flex-direction: column; gap: 10px; width: 100%;"></div>
             <button id="admin-fixed-btn" class="widget-login-btn" onclick="switchTab('admin')" style="display:none; background: rgba(138, 43, 226, 0.12); border-color: rgba(138, 43, 226, 0.3);"><i data-lucide="shield-check" style="width:19px;height:19px;"></i> Админ</button>
-            <button id="forum-fixed-btn" class="widget-login-btn" onclick="switchTab('forum')"><i data-lucide="messages-square" style="width:19px;height:19px;"></i> Форум</button>
+            <button id="forum-fixed-btn" class="widget-login-btn gated-nav-hidden" onclick="switchTab('forum')"><i data-lucide="messages-square" style="width:19px;height:19px;"></i> Форум</button>
         </div>
         
         <main id="section-home" class="content-section active">
@@ -3801,6 +3806,12 @@
         let isUserModerator = false;
 
         let sectionVisibilityMap = {};
+        // Пока конфигурация видимости разделов не загружена с сервера, мы НЕ знаем,
+        // какие разделы скрыты, поэтому по умолчанию считаем всё недоступным для
+        // обычных игроков (см. canAccessSection). Это убирает и "мигание" скрытых
+        // разделов в навигации, и саму возможность зайти в них, пока идёт проверка —
+        // актуально при медленном/нестабильном интернете.
+        let sectionVisibilityLoaded = false;
 
 const SECTION_LABELS = {
     join: 'Как попасть на сервер',
@@ -3824,6 +3835,7 @@ const SECTION_NAV_MAP = {
 };
 
 function canAccessSection(key) {
+    if (!sectionVisibilityLoaded) return !!isUserModerator;
     const vis = sectionVisibilityMap[key] || 'visible';
     return vis === 'visible' || !!isUserModerator;
 }
@@ -3835,11 +3847,11 @@ function applySectionVisibility() {
         const allowed = canAccessSection(key);
 
         if (key === 'blackmarket') {
-            el.style.display = ''; 
+            el.classList.remove('gated-nav-hidden');
             el.style.pointerEvents = allowed ? 'auto' : 'none';
             el.style.cursor = allowed ? 'pointer' : 'default';
         } else {
-            el.style.display = allowed ? '' : 'none';
+            el.classList.toggle('gated-nav-hidden', !allowed);
         }
 
         if (allowed && sectionVisibilityMap[key] === 'moderators_only') {
@@ -3859,8 +3871,11 @@ async function loadSectionVisibility() {
         if (error) throw error;
         sectionVisibilityMap = {};
         (data || []).forEach(row => { sectionVisibilityMap[row.key] = row.visibility; });
+        sectionVisibilityLoaded = true;
     } catch (e) {
         console.error('[SectionVisibility] Не удалось загрузить видимость разделов:', e);
+        // Не выставляем sectionVisibilityLoaded = true: пока не получили точный
+        // ответ от сервера, безопаснее держать разделы скрытыми, а не открытыми.
     }
     applySectionVisibility();
 }
@@ -6943,6 +6958,7 @@ async function loadSectionVisibility() {
                     updateForumForm();
                     updateNewsForm();
                     if (window.lucide) lucide.createIcons();
+                    applySectionVisibility();
                     return;
                 }
 
@@ -6972,6 +6988,7 @@ async function loadSectionVisibility() {
                 
                 isUserModerator = !!modData;
                 updateNewsForm();
+                applySectionVisibility();
 
                 const { data: linkedData, error: linkedError } = await supabaseClient
                     .from('linked_accounts')
@@ -7993,7 +8010,7 @@ async function loadSectionVisibility() {
 
 function switchTab(tabName) {
     if (GATED_TAB_SECTIONS.includes(tabName) && !canAccessSection(tabName)) {
-        customAlert('🔒 Раздел скрыт', 'Этот раздел скоро откроется!');
+        customAlert('🔒 Раздел скрыт', 'Этот раздел сейчас доступен только модераторам сервера.');
         return;
     }
 
