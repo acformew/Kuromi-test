@@ -12,40 +12,49 @@
   .chip[aria-pressed=true]{background:#f0b44c;color:#10141c;border-color:#f0b44c}
   :focus-visible{outline:2px solid #f0b44c;outline-offset:2px}
   @keyframes spin{to{transform:rotate(360deg)}} .spin{animation:spin .8s linear infinite}
-  @media (prefers-reduced-motion:reduce){.spin,.animate-pulse{animation:none}}
+  @keyframes rise{from{opacity:0;transform:translate(-50%,12px)}to{opacity:1;transform:translate(-50%,0)}}
+  #toast{animation:rise .25s ease-out}
+  @media (prefers-reduced-motion:reduce){.spin,.animate-pulse,#toast{animation:none}}
 </style>
 </head>
 <body class="min-h-screen">
-<main class="max-w-3xl mx-auto px-4 py-8">
+<main class="max-w-5xl mx-auto px-4 py-8">
   <header>
     <h1 class="text-3xl font-bold tracking-tight">Рабочие VPN-узлы</h1>
     <p id="status" class="text-slate-400 mt-1 text-sm">Загрузка…</p>
     <div class="flex flex-wrap gap-2 mt-4">
-      <button id="refresh" class="flex items-center gap-2 bg-[#f0b44c] text-[#10141c] font-semibold rounded-lg px-4 py-2 text-sm disabled:opacity-60">
-        <svg id="spin" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
-        <span>Обновить список</span>
-      </button>
+      <button id="best" class="bg-[#f0b44c] text-[#10141c] font-bold rounded-lg px-4 py-2 text-sm">🔥 Самый лучший VPN</button>
+      <button id="refresh" class="flex items-center gap-2 border border-slate-600 rounded-lg px-4 py-2 text-sm disabled:opacity-60">
+        <svg id="spin" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>Обновить список</button>
       <button id="recheck" class="border border-slate-600 rounded-lg px-4 py-2 text-sm disabled:opacity-60">Перепроверить пинг</button>
+      <button id="copySub" class="border border-slate-600 rounded-lg px-4 py-2 text-sm">Ссылка подписки</button>
     </div>
   </header>
 
   <section class="mt-6 space-y-3" aria-label="Фильтры">
-    <input id="q" type="search" placeholder="Поиск: название, страна, флаг, адрес" class="w-full bg-[#1a202c] border border-slate-700 rounded-lg px-3 py-2 text-sm">
+    <input id="q" type="search" placeholder="Поиск: страна, город, IP, название" class="w-full bg-[#1a202c] border border-slate-700 rounded-lg px-3 py-2 text-sm">
     <div id="regions" class="flex flex-wrap gap-2"></div>
     <div class="flex flex-wrap items-center gap-2">
       <select id="country" class="bg-[#1a202c] border border-slate-700 rounded-lg px-3 py-2 text-sm"></select>
       <select id="proto" class="bg-[#1a202c] border border-slate-700 rounded-lg px-3 py-2 text-sm">
         <option value="">Все протоколы</option><option value="vless">VLESS</option>
-        <option value="vmess">VMess</option><option value="trojan">Trojan</option><option value="ss">Shadowsocks</option>
-      </select>
-      <label class="flex items-center gap-2 text-sm px-2"><input id="onlyAlive" type="checkbox" checked> Только рабочие</label>
-      <button id="copyBest" class="ml-auto border border-slate-600 rounded-lg px-3 py-2 text-sm">Лучший VLESS</button>
-      <button id="copySub" class="border border-slate-600 rounded-lg px-3 py-2 text-sm">Ссылка подписки</button>
+        <option value="vmess">VMess</option><option value="trojan">Trojan</option><option value="ss">Shadowsocks</option></select>
+      <select id="sort" class="bg-[#1a202c] border border-slate-700 rounded-lg px-3 py-2 text-sm" aria-label="Сортировка">
+        <option value="rec">Сортировка: рекомендуемые</option><option value="trust">По безопасности</option><option value="ping">По пингу</option></select>
+      <label class="flex items-center gap-2 text-sm px-1"><input id="onlyReality" type="checkbox"> Только REALITY</label>
+      <label class="flex items-center gap-2 text-sm px-1"><input id="onlyAlive" type="checkbox" checked> Скрыть DEAD</label>
+      <div class="ml-auto flex items-center gap-2 text-sm"><span class="text-slate-400">Формат:</span>
+        <div id="fmt" class="flex gap-1"><button class="chip border border-slate-600 rounded-lg px-3 py-1.5" data-f="std" aria-pressed="true">Стандартный</button>
+          <button class="chip border border-slate-600 rounded-lg px-3 py-1.5" data-f="happ" aria-pressed="false">Happ (Sing-Box)</button></div></div>
     </div>
   </section>
 
-  <ul id="list" class="mt-6 divide-y divide-slate-800 border border-slate-800 rounded-xl overflow-hidden"></ul>
-  <p class="text-xs text-slate-500 mt-6">Пинг «браузер» показывает время отклика сервера из вашей сети, а не работу прокси. Оценка доверия описывает настройки транспорта и ничего не говорит о честности владельца узла: публичные узлы могут видеть незашифрованный трафик.</p>
+  <div class="mt-6 border border-slate-800 rounded-xl overflow-hidden">
+    <div class="hidden sm:grid GRID gap-3 px-4 py-2 bg-[#0d1119] text-xs uppercase tracking-wide text-slate-400">
+      <span>Регион / Флаг</span><span>Протокол</span><span>Безопасность</span><span>Задержка</span><span>Действия</span></div>
+    <ul id="list" class="divide-y divide-slate-800"></ul>
+  </div>
+  <p class="text-xs text-slate-500 mt-6">Оценка безопасности описывает настройки транспорта, а не честность владельца узла: публичные узлы могут видеть незашифрованный трафик. Задержка измеряется от сервера проверки до узла, из вашей сети она будет другой.</p>
 </main>
 
 <div id="modal" class="hidden fixed inset-0 bg-black/70 items-center justify-center p-4 overflow-y-auto" role="dialog" aria-modal="true">
@@ -55,10 +64,13 @@
     <div id="mBody" class="mt-4 space-y-4 text-sm"></div>
   </div>
 </div>
-<div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 bg-slate-100 text-slate-900 rounded-lg px-4 py-2 text-sm hidden max-w-[90vw]"></div>
+<div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#1d2535] border border-slate-600 border-l-4 border-l-[#f0b44c] text-slate-100 rounded-xl px-5 py-3 text-sm shadow-2xl max-w-[92vw] z-50"></div>
 
 <script>
+// Адрес Cloudflare Worker (worker.js). Пока не задан, пинг измеряется в браузере (менее точно).
+const WORKER_URL = 'https://YOUR-WORKER.workers.dev';
 const REPO = ''; // «ник/репозиторий»; на *.github.io определяется автоматически
+const useWorker = !WORKER_URL.includes('YOUR-');
 const mm = location.hostname.match(/^(.+)\.github\.io$/);
 const repo = REPO || (mm ? `${mm[1]}/${location.pathname.split('/')[1] || mm[1] + '.github.io'}` : '');
 const RAW = `https://raw.githubusercontent.com/${repo}/main`;
@@ -77,16 +89,19 @@ const REGIONS = {
 
 const FPS = ['chrome', 'firefox', 'safari', 'ios', 'android', 'edge', '360', 'qq', 'random', 'randomized'];
 const NETS = { tcp: 'tcp', raw: 'tcp', ws: 'ws', grpc: 'grpc', gun: 'grpc', httpupgrade: 'httpupgrade', xhttp: 'xhttp', splithttp: 'xhttp', h2: 'h2', http: 'h2', kcp: 'kcp', quic: 'quic' };
+const HAPP_NETS = ['tcp', 'ws', 'grpc', 'httpupgrade', 'h2']; // транспорты, которые умеет ядро Sing-Box
 const okHost = (h) => /^(?=.{1,253}$)([a-z0-9-]+\.)+[a-z][a-z0-9-]+$/i.test(h);
-// Приводит VLESS-ссылку к строгому единому виду. Возвращает null, если ключ непригоден (битый UUID, нет pbk у Reality и т.п.).
-function sanitizeVlessUri(raw) {
+// Нормализует VLESS-ссылку. happ=true включает строгий режим Happ/Sing-Box.
+// Возвращает null, если ключ в этом режиме использовать нельзя.
+function sanitizeVlessUri(raw, happ = false) {
   let u; try { u = new URL(String(raw).trim()); } catch { return null; }
   if (u.protocol !== 'vless:') return null;
-  let id; try { id = decodeURIComponent(u.username).toLowerCase(); } catch { return null; }
+  let id; try { id = decodeURIComponent(u.username).trim().toLowerCase(); } catch { return null; }
   const host = u.hostname, port = +u.port;
   if (!/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(id) || !host || !(port > 0 && port < 65536)) return null;
   const g = (k) => (u.searchParams.get(k) || '').trim();
   const net = NETS[g('type').toLowerCase()] || 'tcp';
+  if (happ && !HAPP_NETS.includes(net)) return null;
   let sec = g('security').toLowerCase();
   if (sec === 'xtls') sec = 'tls';
   if (!['tls', 'reality', 'none'].includes(sec)) sec = g('pbk') ? 'reality' : 'none';
@@ -99,42 +114,54 @@ function sanitizeVlessUri(raw) {
     let sni = g('sni') || g('peer');
     if (!okHost(sni)) sni = '';
     if (!sni && sec === 'tls') sni = okHost(hp) ? hp : okHost(host) ? host : '';
+    if (!sni && sec === 'reality' && happ) return null; // Happ требует SNI для REALITY
     let fp = g('fp').toLowerCase();
-    if (!FPS.includes(fp)) fp = 'chrome';
+    if (happ || !FPS.includes(fp)) fp = 'chrome';
     let flow = g('flow');
     if (!(net === 'tcp' && /^xtls-rprx-vision(-udp443)?$/.test(flow))) flow = '';
     add('flow', flow); add('security', sec); add('sni', sni); add('fp', fp);
     if (sec === 'tls') add('alpn', g('alpn').split(',').map((s) => s.trim()).filter((s) => ['h2', 'http/1.1', 'h3'].includes(s)).join(','));
-    if (sec === 'reality') { add('pbk', pbk); const sid = g('sid'); add('sid', /^[0-9a-f]{0,16}$/i.test(sid) ? sid : ''); add('spx', g('spx')); }
+    if (sec === 'reality') {
+      add('pbk', pbk);
+      let sid = g('sid'); if (!/^[0-9a-f]{0,16}$/i.test(sid)) sid = '';
+      if (happ) q.push(['sid', sid]); else add('sid', sid);
+      add('spx', g('spx'));
+    }
   } else add('security', 'none');
   add('type', net);
   if (net === 'tcp' && g('headerType') === 'http') { add('headerType', 'http'); add('host', hp); add('path', g('path') || '/'); }
   if (['ws', 'httpupgrade', 'xhttp', 'h2'].includes(net)) { add('host', hp); const p = g('path') || '/'; add('path', p.startsWith('/') ? p : '/' + p); }
   if (net === 'grpc') { add('serviceName', g('serviceName')); const m = g('mode'); if (['gun', 'multi'].includes(m)) add('mode', m); }
   let name; try { name = decodeURIComponent(u.hash.slice(1)); } catch { name = u.hash.slice(1); }
-  name = (name.replace(/[\u0000-\u001f]/g, '').trim() || `${host}:${port}`).slice(0, 80);
+  name = name.replace(/[\u0000-\u001f]/g, ' ');
+  if (happ) name = name.replace(/[^\p{L}\p{N}\p{Regional_Indicator}\p{Extended_Pictographic} ._|:@()\[\]-]/gu, '');
+  name = (name.replace(/\s+/g, ' ').trim() || `${host}:${port}`).slice(0, 80);
   return `vless://${id}@${host}:${port}?${q.map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&')}#${encodeURIComponent(name)}`;
 }
+const sanitizeVlessForHapp = (raw) => sanitizeVlessUri(raw, true);
 
 
 const $ = (id) => document.getElementById(id);
 const names = new Intl.DisplayNames(['ru'], { type: 'region' });
 const emoji = (c) => c && c.length === 2 ? String.fromCodePoint(...[...c].map((x) => x.charCodeAt(0) + 0x1f1e6 - 65)) : '🌐';
-const cname = (c) => { try { return names.of(c) || c; } catch { return c; } };
+const cname = (c) => { try { return names.of(c) || c; } catch { return c || 'Неизвестно'; } };
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const shuffle = (a) => a.map((x) => [Math.random(), x]).sort((p, q) => p[0] - q[0]).map((x) => x[1]);
 const b64d = (s) => { try { s = s.trim().replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '=';
   return new TextDecoder().decode(Uint8Array.from(atob(s), (c) => c.charCodeAt(0))); } catch { return ''; } };
 const flagOf = (t) => { const m = (t || '').match(/[\u{1F1E6}-\u{1F1FF}]{2}/u);
   return m ? [...m[0]].map((c) => String.fromCharCode(c.codePointAt(0) - 0x1f1e6 + 65)).join('') : ''; };
-const keyOf = (n) => `${n.p}|${n.h}|${n.o}`;
-const pingCls = (ms) => ms == null ? 'text-slate-400 bg-slate-800' : ms < 150 ? 'text-emerald-300 bg-emerald-950' : ms <= 350 ? 'text-amber-300 bg-amber-950' : 'text-red-300 bg-red-950';
-let nodes = [], region = '', shown = [], meta = null, busy = false;
+const keyOf = (n) => `${n.h}:${n.o}`; // дубликаты по IP:PORT
+const pingCls = (ms) => ms == null ? 'text-red-300 bg-red-950' : ms < 150 ? 'text-emerald-300 bg-emerald-950' : ms <= 350 ? 'text-amber-300 bg-amber-950' : 'text-red-300 bg-red-950';
+let nodes = [], region = '', shown = [], meta = null, busy = false, fmt = 'std';
 
-function toast(t) { const e = $('toast'); e.textContent = t; e.classList.remove('hidden'); clearTimeout(toast.t); toast.t = setTimeout(() => e.classList.add('hidden'), 2400); }
-async function copy(t, msg) { try { await navigator.clipboard.writeText(t); toast(msg); } catch { prompt('Скопируйте вручную:', t); } }
+let toastT;
+function toast(html, ms = 2400) { const e = $('toast'); e.innerHTML = html; e.classList.remove('hidden');
+  e.style.animation = 'none'; void e.offsetWidth; e.style.animation = ''; clearTimeout(toastT); toastT = setTimeout(() => e.classList.add('hidden'), ms); }
+async function copy(t, msg, ms) { try { await navigator.clipboard.writeText(t); toast(msg, ms); } catch { prompt('Скопируйте вручную:', t); } }
+const keyFor = (x) => fmt === 'happ' ? x.hl : x.l; // ссылка в выбранном формате
 
-// ---------- разбор и инспекция ключа ----------
+// ---------- разбор ключа ----------
 function inspect(l) {
   const p = l.slice(0, l.indexOf('://'));
   const r = { proto: p, net: 'tcp', sec: 'none', sni: '', fp: '', alpn: '', flow: '', host: '', port: 0, name: '' };
@@ -157,38 +184,57 @@ function inspect(l) {
   } catch { /* битые поля остаются пустыми */ }
   return r;
 }
+function mkNode(l, extra) {
+  const p = l.slice(0, l.indexOf('://'));
+  const r = inspect(l);
+  if (!r.host || !(r.port > 0 && r.port < 65536)) return null;
+  return { p, h: r.host, o: r.port, n: (r.name || r.host).slice(0, 80), c: flagOf(r.name), city: '', l,
+    hl: p === 'vless' ? sanitizeVlessForHapp(l) : l, ping: null, src: null, v: false, ...extra };
+}
 function parseLine(line) {
   line = line.trim();
   const p = (line.match(/^(vless|vmess|trojan|ss):\/\//) || [])[1];
   if (!p) return null;
   let l = line;
   if (p === 'vless') { l = sanitizeVlessUri(line); if (!l) return null; }
-  const r = inspect(l);
-  if (!r.host || !(r.port > 0 && r.port < 65536)) return null;
-  return { p, h: r.host, o: r.port, n: (r.name || r.host).slice(0, 80), c: flagOf(r.name), l, ping: null, src: null, v: false };
+  return mkNode(l);
 }
-const desc = (r) => r.proto === 'ss' ? 'SHADOWSOCKS' : [r.proto.toUpperCase(), ['tls', 'reality'].includes(r.sec) ? r.sec.toUpperCase() : '', (r.net || 'tcp').toUpperCase()].filter(Boolean).join(' + ');
+const tag = (r) => r.proto === 'ss' ? 'SHADOWSOCKS' : [r.proto.toUpperCase(), ['tls', 'reality'].includes(r.sec) ? r.sec.toUpperCase() : '', (r.net || 'tcp').toUpperCase()].filter(Boolean).join(' + ');
+const shortTag = (r) => r.proto === 'ss' ? 'Shadowsocks' : r.proto.toUpperCase() + (r.sec === 'reality' ? ' REALITY' : r.sec === 'tls' ? ' TLS' : '');
 
-// ---------- шкала доверия ----------
+// ---------- индекс доверия ----------
 const KNOWN_SNI = /(google|gstatic|youtube|microsoft|office|bing|live\.com|cloudflare|yahoo|apple|icloud|amazon|aws|github|mozilla|samsung|nvidia|cisco|oracle|intel|ubuntu|speedtest|zoom|adobe)/i;
-const SAFE_PORTS = [443, 8443, 2053, 2083, 2096];
+const SAFE_PORTS = [443, 8443, 2053, 2083, 2096], STD_PORTS = [443, 8443];
 const BAD_PORTS = [21, 22, 23, 25, 80, 110, 1080, 3128, 3389, 8080, 8888];
 function trust(x) {
-  const r = inspect(x.l), it = [];
-  const enc = ['tls', 'reality', 'ss'].includes(r.sec);
-  it.push([enc ? 40 : 0, enc ? `Шифрованный транспорт (${r.sec === 'ss' ? 'Shadowsocks' : r.sec.toUpperCase()})` : 'Транспорт без шифрования (нет TLS/REALITY)']);
-  const known = r.sni && KNOWN_SNI.test(r.sni);
-  it.push([known ? 30 : 0, known ? `Известная SNI-маскировка: ${r.sni}` : r.sni ? `SNI ${r.sni} не входит в список известных` : 'SNI не указан']);
-  const safePort = SAFE_PORTS.includes(x.o);
-  it.push([safePort ? 20 : 0, safePort ? `Стандартный защищённый порт ${x.o}` : `Нестандартный порт ${x.o}`]);
-  const fast = x.ping != null && x.ping < 200;
-  it.push([fast ? 10 : 0, fast ? `Низкий пинг (${x.ping} ms)` : 'Пинг высокий или не измерен']);
-  const bad = (!enc && ['vless', 'vmess'].includes(r.proto)) || BAD_PORTS.includes(x.o);
-  if (bad) it.push([-50, !enc && ['vless', 'vmess'].includes(r.proto) ? 'Штраф: ' + r.proto.toUpperCase() + ' без шифрования' : `Штраф: подозрительный порт ${x.o}`]);
+  if (x._t) return x._t;
+  const r = inspect(x.l), it = [], add = (p, s) => it.push([p, s]);
+  const known = r.sni && KNOWN_SNI.test(r.sni), std = STD_PORTS.includes(x.o), safe = SAFE_PORTS.includes(x.o);
+  const portTxt = std ? `Стандартный порт ${x.o}` : safe ? `Допустимый порт ${x.o}` : `Нестандартный порт ${x.o}`;
+  if (r.sec === 'reality') {
+    add(55, 'REALITY: маскировка под TLS 1.3 без собственного сертификата');
+    add(known ? 25 : 0, known ? `SNI ${r.sni} принадлежит крупному сервису/CDN` : r.sni ? `SNI ${r.sni} не из списка крупных сервисов` : 'SNI не указан');
+    add(std ? 15 : safe ? 6 : 0, portTxt);
+    add(r.fp ? 5 : 0, r.fp ? `Fingerprint ${r.fp}` : 'Fingerprint не задан');
+  } else if (r.sec === 'tls') {
+    add(55, `TLS-шифрование (${r.proto.toUpperCase()})`);
+    add(r.sni ? 10 : 0, r.sni ? `SNI задан: ${r.sni}` : 'SNI не указан');
+    if (known) add(5, 'SNI крупного сервиса');
+    add(std ? 10 : safe ? 5 : 0, portTxt);
+  } else if (r.sec === 'ss') {
+    add(45, 'Shadowsocks: трафик зашифрован, но не маскируется под TLS');
+    add(std ? 10 : 0, portTxt);
+  } else {
+    add(20, `Нет TLS/REALITY: ${r.proto.toUpperCase()} без шифрования транспорта`);
+    add(safe ? 0 : -10, portTxt);
+  }
+  if (BAD_PORTS.includes(x.o)) add(-20, `Подозрительный порт ${x.o}`);
   const score = Math.max(0, Math.min(100, it.reduce((a, b) => a + b[0], 0)));
-  return { score, it, r, label: score >= 75 ? 'Высокая' : score >= 40 ? 'Средняя' : 'Низкая',
-    cls: score >= 75 ? 'text-emerald-300 bg-emerald-950' : score >= 40 ? 'text-amber-300 bg-amber-950' : 'text-red-300 bg-red-950' };
+  const hi = score >= 90, mid = score >= 65;
+  return (x._t = { score, it, r, label: hi ? 'High' : mid ? 'Medium' : 'Low', dot: hi ? '🟢' : mid ? '🟡' : '🔴',
+    cls: hi ? 'text-emerald-300 bg-emerald-950' : mid ? 'text-amber-300 bg-amber-950' : 'text-red-300 bg-red-950' });
 }
+const combo = (x) => x.ping == null ? -1e9 : trust(x).score * 1.5 - x.ping * 0.2;
 
 // ---------- загрузка ----------
 function merge(arr) {
@@ -197,7 +243,7 @@ function merge(arr) {
   for (const n of arr) {
     const old = idx.get(keyOf(n));
     if (!old) { nodes.push(n); idx.set(keyOf(n), n); added.push(n); }
-    else if (n.v && old.src !== 'browser') { old.ping = n.ping; old.src = n.src; old.v = true; }
+    else if (n.v) Object.assign(old, { v: true, u: n.u, city: n.city || old.city, c: n.c || old.c, ping: old.src === 'worker' ? old.ping : n.ping, src: old.src === 'worker' ? 'worker' : 'server' });
   }
   return added;
 }
@@ -208,7 +254,8 @@ async function fetchPublished() {
   const d = await r.json();
   meta = { updated: d.updated, tested: d.tested };
   return d.nodes.map((x) => { const l = x.p === 'vless' ? sanitizeVlessUri(x.l) : x.l; if (!l) return null;
-    return { p: x.p, h: x.h, o: x.o, n: x.n || x.h, c: x.c || '', l, ping: x.ms ?? null, src: x.ms != null ? 'server' : null, v: x.ms != null }; }).filter(Boolean);
+    const n = mkNode(l, { c: x.c || '', city: x.city || '', ping: x.ms ?? null, src: x.ms != null ? 'server' : null, v: x.ms != null, u: x.u });
+    if (n && x.n) n.n = x.n; return n; }).filter(Boolean);
 }
 async function fetchSources() {
   const res = await Promise.allSettled(shuffle(SOURCES).slice(0, 3).map(async (u) => {
@@ -217,10 +264,8 @@ async function fetchSources() {
     const t = await r.text();
     return (t.includes('://') ? t : b64d(t)).split(/\r?\n/);
   }));
-  const lines = shuffle(res.flatMap((r) => r.status === 'fulfilled' ? r.value : [])).slice(0, 400);
-  return lines.map(parseLine).filter(Boolean);
+  return shuffle(res.flatMap((r) => r.status === 'fulfilled' ? r.value : [])).slice(0, 400).map(parseLine).filter(Boolean);
 }
-
 function skeleton() {
   $('list').innerHTML = Array.from({ length: 7 }, () => `<li class="px-4 py-4 bg-[#151b26]"><div class="animate-pulse flex items-center gap-3">
     <div class="w-7 h-7 rounded-full bg-slate-700"></div><div class="flex-1 space-y-2"><div class="h-3 w-2/3 rounded bg-slate-700"></div><div class="h-2 w-1/3 rounded bg-slate-800"></div></div>
@@ -229,9 +274,8 @@ function skeleton() {
 function setBusy(b, label) {
   busy = b; $('refresh').disabled = b; $('recheck').disabled = b;
   $('spin').classList.toggle('spin', b && label === 'refresh');
-  $('recheck').textContent = b && label !== 'refresh' && label ? label : 'Перепроверить пинг';
+  $('recheck').textContent = b && label && label !== 'refresh' ? label : 'Перепроверить пинг';
 }
-
 async function refresh(more) {
   if (busy) return;
   setBusy(true, 'refresh'); skeleton();
@@ -242,15 +286,15 @@ async function refresh(more) {
     if (!nodes.length) throw new Error('empty');
     updateCountries(); render();
     const fresh = added.filter((n) => !n.v).slice(0, 150);
-    if (fresh.length) { await pingAll(fresh, true); }
-    toast(more ? (added.length ? `Добавлено новых ключей: ${added.length}` : 'Новых ключей не нашлось') : 'Список загружен');
+    if (fresh.length) await probe(fresh, null);
+    if (more) toast(added.length ? `Добавлено новых ключей: ${added.length}` : 'Новых ключей не нашлось');
   } catch {
     $('list').innerHTML = '<li class="p-6 text-slate-400 text-sm">Не удалось получить ключи. Проверьте соединение и нажмите «Обновить список».</li>';
   } finally { setBusy(false); updateStatus(); render(); }
 }
 
-// ---------- замер пинга в браузере ----------
-async function rtt(h, o, ms = 3000) {
+// ---------- реальная проверка: TCP через Worker, запасной вариант: браузер ----------
+async function rtt(h, o, ms = 2500) {
   const host = h.includes(':') ? `[${h}]` : h;
   let best = null;
   for (let i = 0; i < 2; i++) {
@@ -260,36 +304,50 @@ async function rtt(h, o, ms = 3000) {
     catch (e) { aborted = e.name === 'AbortError'; }
     clearTimeout(t);
     const d = Math.round(performance.now() - s);
-    if (!aborted && d >= 5) best = best === null ? d : Math.min(best, d); // <5 мс = браузер сам отклонил порт
+    if (!aborted && d >= 5) best = best === null ? d : Math.min(best, d);
   }
   return best;
 }
-async function pingAll(list, quiet) {
-  let done = 0, i = 0;
-  const upd = () => { if (!quiet) $('recheck').textContent = `Проверено ${done}/${list.length}`; };
-  if (!quiet) setBusy(true, 'x'); upd();
-  await Promise.all(Array.from({ length: 20 }, async () => {
-    while (i < list.length) {
-      const n = list[i++];
-      const ms = await rtt(n.h, n.o);
-      n.ping = ms; n.src = ms == null ? null : 'browser'; n.v = n.v && ms != null;
-      if (ms != null) n.v = n.v || true;
-      done++; upd();
+function apply(n, ms, via) {
+  if (ms != null) { n.ping = ms; n.src = via; }
+  else if (n.v) n.src = 'server'; // узел прошёл проверку прокси на сервере: сбой TCP-теста из Cloudflare его не хоронит
+  else { n.ping = null; n.src = null; } // DEAD
+}
+async function probe(list, label) {
+  const chunks = [];
+  for (let i = 0; i < list.length; i += 6) chunks.push(list.slice(i, i + 6));
+  let k = 0, done = 0;
+  if (label !== null) setBusy(true, 'Проверка 0/' + list.length);
+  await Promise.all(Array.from({ length: 4 }, async () => {
+    while (k < chunks.length) {
+      const ch = chunks[k++];
+      let res = null;
+      if (useWorker) try {
+        const r = await fetch(`${WORKER_URL}/ping?t=${ch.map((n) => encodeURIComponent(keyOf(n))).join(',')}`, { signal: AbortSignal.timeout(9000) });
+        if (r.ok) res = await r.json();
+      } catch { /* Worker недоступен: ниже запасной замер */ }
+      await Promise.all(ch.map(async (n) => {
+        if (res) apply(n, res[keyOf(n)] ?? null, 'worker');
+        else apply(n, await rtt(n.h, n.o), 'browser');
+        done++;
+      }));
+      if (label !== null) $('recheck').textContent = `Проверка ${done}/${list.length}`;
     }
   }));
-  if (!quiet) { setBusy(false); render(); toast('Пинг обновлён, список отсортирован'); }
 }
-$('recheck').onclick = () => {
+$('recheck').onclick = async () => {
   if (busy || !nodes.length) return;
-  const list = [...nodes].sort((a, b) => (a.ping ?? 1e9) - (b.ping ?? 1e9)).slice(0, 400);
-  pingAll(list, false);
+  await probe([...nodes].sort((a, b) => (a.ping ?? 1e9) - (b.ping ?? 1e9)).slice(0, 400), '');
+  setBusy(false); updateStatus(); render(); toast('Пинг обновлён, список пересортирован');
 };
 
-// ---------- список ----------
+// ---------- таблица ----------
+const GRID = 'sm:grid-cols-[minmax(0,1.7fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,.9fr)_auto]';
 function updateStatus() {
   const alive = nodes.filter((x) => x.ping != null).length;
-  const ago = meta ? (() => { const m = Math.round((Date.now() - new Date(meta.updated)) / 60000); return m < 60 ? `${m} мин назад` : `${Math.round(m / 60)} ч назад`; })() : '';
-  $('status').textContent = `Узлов: ${nodes.length}, с откликом: ${alive}.` + (meta ? ` Серверная проверка прокси: ${ago}.` : '');
+  let ago = '';
+  if (meta) { const m = Math.round((Date.now() - new Date(meta.updated)) / 60000); ago = ` Проверка прокси: ${m < 60 ? m + ' мин' : Math.round(m / 60) + ' ч'} назад.`; }
+  $('status').textContent = `Узлов: ${nodes.length}, живых: ${alive}.${ago} ${useWorker ? 'TCP-тест через Worker.' : 'Worker не задан: замер в браузере.'}`;
 }
 function updateCountries() {
   const codes = [...new Set(nodes.map((x) => x.c).filter(Boolean))].sort(), cur = $('country').value;
@@ -297,20 +355,25 @@ function updateCountries() {
   $('country').value = codes.includes(cur) ? cur : '';
 }
 function render() {
-  const c = $('country').value, p = $('proto').value, q = $('q').value.trim().toLowerCase(), only = $('onlyAlive').checked;
-  shown = nodes.filter((x) => (!only || x.ping != null) && (!c || x.c === c) && (!p || x.p === p) && (!region || REGIONS[region].includes(x.c)) &&
-    (!q || `${x.n} ${x.h} ${x.c} ${cname(x.c)} ${emoji(x.c)}`.toLowerCase().includes(q)))
-    .sort((a, b) => (a.ping ?? 1e9) - (b.ping ?? 1e9));
+  const c = $('country').value, p = $('proto').value, q = $('q').value.trim().toLowerCase(), alive = $('onlyAlive').checked, rl = $('onlyReality').checked, s = $('sort').value;
+  shown = nodes.filter((x) => (!alive || x.ping != null) && (!c || x.c === c) && (!p || x.p === p) && (!region || REGIONS[region].includes(x.c)) &&
+    (!rl || trust(x).r.sec === 'reality') && (fmt !== 'happ' || x.hl) &&
+    (!q || `${x.n} ${x.h} ${x.c} ${cname(x.c)} ${x.city} ${emoji(x.c)}`.toLowerCase().includes(q)));
+  shown.sort(s === 'ping' ? (a, b) => (a.ping ?? 1e9) - (b.ping ?? 1e9)
+    : s === 'trust' ? (a, b) => trust(b).score - trust(a).score || (a.ping ?? 1e9) - (b.ping ?? 1e9)
+    : (a, b) => combo(b) - combo(a));
   if (!shown.length) { $('list').innerHTML = '<li class="p-6 text-slate-400 text-sm">Нет узлов по этим фильтрам. Смените фильтры или нажмите «Обновить список».</li>'; return; }
   $('list').innerHTML = shown.slice(0, 200).map((x, i) => {
-    const t = trust(x), r = t.r;
-    return `<li data-i="${i}" class="flex items-center gap-3 px-4 py-3 bg-[#151b26] cursor-pointer hover:bg-[#1a2230]">
-      <span class="text-xl" aria-hidden="true">${emoji(x.c)}</span>
-      <div class="min-w-0 flex-1"><div class="truncate text-sm font-semibold">${esc(x.n)}</div>
-        <div class="text-xs text-slate-400 truncate">${esc(desc(r))} · ${x.src === 'server' ? 'прокси проверен' : x.src === 'browser' ? 'отклик из браузера' : 'не проверен'}</div></div>
-      <span class="hidden sm:inline text-xs font-semibold rounded-md px-2 py-1 ${t.cls}" title="Шкала доверия: ${t.label}">🛡️ ${t.score}%</span>
-      <span class="text-xs font-semibold rounded-md px-2 py-1 whitespace-nowrap ${pingCls(x.ping)}">${x.ping == null ? 'N/A' : '⚡ ' + x.ping + ' ms'}</span>
-      <button data-copy="${i}" class="border border-slate-600 rounded-md px-3 py-1.5 text-xs">Копировать</button></li>`;
+    const t = trust(x);
+    return `<li data-i="${i}" class="grid grid-cols-2 ${GRID} gap-x-3 gap-y-2 items-center px-4 py-3 bg-[#151b26] cursor-pointer hover:bg-[#1a2230]">
+      <div class="col-span-2 sm:col-span-1 flex items-center gap-3 min-w-0"><span class="text-xl" aria-hidden="true">${emoji(x.c)}</span>
+        <div class="min-w-0"><div class="truncate text-sm font-semibold">${esc(x.c ? cname(x.c) : 'Неизвестно')}${x.city ? ', ' + esc(x.city) : ''}</div>
+        <div class="truncate text-xs text-slate-400">${esc(x.n)}</div></div></div>
+      <div class="text-xs text-slate-300 truncate">${esc(tag(t.r))}</div>
+      <div><span class="text-xs font-semibold rounded-md px-2 py-1 whitespace-nowrap ${t.cls}">${t.dot} ${t.score}% ${t.label}</span></div>
+      <div><span class="text-xs font-semibold rounded-md px-2 py-1 whitespace-nowrap ${pingCls(x.ping)}" title="${x.src === 'worker' ? 'TCP-рукопожатие с сервера проверки' : x.src === 'server' ? 'Задержка через прокси, замер Actions' : x.src === 'browser' ? 'Отклик из браузера' : ''}">${x.ping == null ? 'DEAD' : '⚡ ' + x.ping + ' ms'}</span></div>
+      <div class="col-span-2 sm:col-span-1 flex gap-2"><button data-copy="${i}" class="border border-slate-600 rounded-md px-3 py-1.5 text-xs">Копировать</button>
+        <button data-info="${i}" class="border border-slate-600 rounded-md px-3 py-1.5 text-xs whitespace-nowrap">Инфо / QR</button></div></li>`;
   }).join('');
 }
 
@@ -326,70 +389,75 @@ async function geo(host) {
   if (!ip) throw new Error('dns');
   const g = await (await fetch(`https://ipwho.is/${ip}`)).json();
   if (!g.success) throw new Error('geo');
-  return (geoCache[host] = { ip, country: g.country, code: g.country_code, city: g.city, org: g.connection && g.connection.org });
+  return (geoCache[host] = { ip, country: g.country, code: g.country_code, city: g.city });
 }
 function openDetails(x) {
-  const t = trust(x), r = t.r, row = (k, v, id) => `<div class="flex justify-between gap-4 border-b border-slate-800 pb-1.5"><span class="text-slate-400">${k}</span><span class="text-right break-all" ${id ? `id="${id}"` : ''}>${v}</span></div>`;
+  const t = trust(x), r = t.r, k = keyFor(x);
+  const row = (a, b) => `<div class="flex justify-between gap-4 border-b border-slate-800 pb-1.5"><span class="text-slate-400">${a}</span><span class="text-right break-all">${b}</span></div>`;
   $('mTitle').textContent = `${emoji(x.c)} ${x.n}`;
   $('mBody').innerHTML = `
-    <div class="flex items-center gap-3"><span class="text-xs font-semibold rounded-md px-2 py-1 ${t.cls}">🛡️ ${t.score}% · ${t.label} безопасность</span>
-      <span class="text-xs font-semibold rounded-md px-2 py-1 ${pingCls(x.ping)}">${x.ping == null ? 'N/A' : '⚡ ' + x.ping + ' ms'}</span></div>
+    <div class="flex flex-wrap items-center gap-2"><span class="text-xs font-semibold rounded-md px-2 py-1 ${t.cls}">${t.dot} ${t.score}% ${t.label}</span>
+      <span class="text-xs font-semibold rounded-md px-2 py-1 ${pingCls(x.ping)}">${x.ping == null ? 'DEAD' : '⚡ ' + x.ping + ' ms'}</span></div>
     <div class="space-y-1.5">
       ${row('Страна', `<span id="gCountry">${x.c ? emoji(x.c) + ' ' + esc(cname(x.c)) : 'определяется…'}</span>`)}
-      ${row('Город', 'определяется…', 'gCity')}
-      ${row('Протокол и транспорт', esc(desc(r)))}
+      ${row('Город', `<span id="gCity">${esc(x.city) || 'определяется…'}</span>`)}
+      ${row('Протокол и транспорт', esc(tag(r)))}
       ${row('SNI / Server Name', esc(r.sni || 'не указан'))}
       ${row('Fingerprint', esc(r.fp ? 'fp=' + r.fp : 'не указан'))}
       ${r.flow ? row('Flow', esc(r.flow)) : ''}
       ${row('Порт', x.o)}
-      ${row('Адрес', esc(x.h) + ' <span id="gIp" class="text-slate-400"></span>')}
+      ${row('Адрес', `${esc(x.h)} <span id="gIp" class="text-slate-400"></span>`)}
+      ${x.u ? row('Аптайм', `${Math.round(x.u[1] / x.u[0] * 100)}% (${x.u[1]} из ${x.u[0]} проверок)`) : ''}
     </div>
     <div><div class="font-semibold mb-1.5">Почему такая оценка</div><ul class="space-y-1">
       ${t.it.map(([p, s]) => `<li class="flex gap-2"><span class="w-12 shrink-0 font-semibold ${p > 0 ? 'text-emerald-300' : p < 0 ? 'text-red-300' : 'text-slate-500'}">${p > 0 ? '+' : ''}${p}%</span><span class="text-slate-300">${esc(s)}</span></li>`).join('')}</ul></div>
-    <div><div class="font-semibold mb-1.5">Ключ</div>
-      <textarea id="rawKey" readonly rows="4" class="w-full bg-[#10141c] border border-slate-700 rounded-lg p-2 text-xs break-all">${esc(x.l)}</textarea>
+    <div><div class="font-semibold mb-1.5">Ключ (${fmt === 'happ' ? 'Happ / Sing-Box' : 'стандартный'})</div>
+      <textarea readonly rows="4" class="w-full bg-[#10141c] border border-slate-700 rounded-lg p-2 text-xs break-all">${esc(k)}</textarea>
       <div class="flex gap-2 mt-2"><button id="mCopy" class="flex-1 bg-[#f0b44c] text-[#10141c] font-semibold rounded-lg py-2">Скопировать</button>
         <button id="mQr" class="flex-1 border border-slate-600 rounded-lg py-2">Показать QR</button></div>
       <div id="qrBox" class="hidden mt-3 bg-white rounded-xl p-3 w-fit mx-auto"></div></div>`;
-  $('mCopy').onclick = () => copy(x.l, 'Ключ скопирован');
+  $('mCopy').onclick = () => copy(k, 'Ключ скопирован');
   $('mQr').onclick = () => { const b = $('qrBox'); b.classList.toggle('hidden');
-    if (!b.firstChild) new QRCode(b, { text: x.l, width: 240, height: 240, correctLevel: QRCode.CorrectLevel.L }); };
+    if (!b.firstChild) new QRCode(b, { text: k, width: 240, height: 240, correctLevel: QRCode.CorrectLevel.L }); };
   $('modal').classList.replace('hidden', 'flex');
-  geo(x.h).then((g) => { if ($('gCity')) { $('gCity').textContent = g.city || 'н/д'; $('gIp').textContent = `(${g.ip})`;
-    if (g.country) $('gCountry').textContent = `${emoji(g.code)} ${g.country}`; if (!x.c && g.code) { x.c = g.code; render(); } } })
-    .catch(() => { if ($('gCity')) { $('gCity').textContent = 'н/д'; if (!x.c) $('gCountry').textContent = 'н/д'; } });
+  geo(x.h).then((g) => { if (!$('gCity')) return; $('gCity').textContent = g.city || x.city || 'н/д'; $('gIp').textContent = `(${g.ip})`;
+    if (g.country) $('gCountry').textContent = `${emoji(g.code)} ${g.country}`; })
+    .catch(() => { if ($('gCity') && $('gCity').textContent === 'определяется…') $('gCity').textContent = 'н/д'; });
 }
 
-// ---------- события ----------
+// ---------- кнопки ----------
+function pickBest() { return nodes.filter((x) => x.ping != null && (fmt !== 'happ' || x.hl)).sort((a, b) => combo(b) - combo(a))[0]; }
+$('best').onclick = () => {
+  const b = pickBest();
+  if (!b) return toast('Пока нет живых узлов. Нажмите «Обновить список».');
+  const t = trust(b);
+  copy(keyFor(b), `<div class="font-semibold">📋 Скопирован лучший VPN!</div><div class="mt-1 text-slate-300">${emoji(b.c)} ${esc(b.c ? cname(b.c) : 'Неизвестно')} (${esc(shortTag(t.r))}) | ⚡ ${b.ping} ms | 🛡️ Доверие: ${t.score}%</div>`, 4000);
+};
+$('copySub').onclick = () => {
+  if (!repo) return toast('Ссылка подписки доступна на *.github.io (нужен репозиторий)');
+  const c = $('country').value, p = $('proto').value, rl = $('onlyReality').checked;
+  const file = c || region || (rl ? 'reality' : '') || p || 'all';
+  copy(`${RAW}/sub/${fmt === 'happ' ? 'happ/' : ''}${file}.txt`, `Ссылка подписки скопирована (${file}, ${fmt === 'happ' ? 'формат Happ' : 'стандартный'}). Клиент будет обновлять её сам.`, 3500);
+};
 $('list').addEventListener('click', (e) => {
   const li = e.target.closest('li[data-i]'); if (!li) return;
   const x = shown[+li.dataset.i];
-  if (e.target.closest('[data-copy]')) return copy(x.l, 'Ключ скопирован');
+  if (e.target.closest('[data-copy]')) return copy(keyFor(x), 'Ключ скопирован');
   openDetails(x);
 });
 $('closeM').onclick = () => $('modal').classList.replace('flex', 'hidden');
 $('modal').onclick = (e) => { if (e.target === $('modal')) $('closeM').click(); };
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') $('closeM').click(); });
-['country', 'proto', 'onlyAlive'].forEach((id) => $(id).onchange = render);
+['country', 'proto', 'sort', 'onlyAlive', 'onlyReality'].forEach((id) => $(id).onchange = render);
 $('q').oninput = render;
 $('refresh').onclick = () => refresh(true);
-$('copyBest').onclick = () => {
-  const b = nodes.filter((x) => x.ping != null && x.p === 'vless').sort((a, c) => a.ping - c.ping)[0];
-  b ? copy(b.l, `Скопирован самый быстрый VLESS (${b.ping} ms)`) : toast('Узлов VLESS с откликом нет');
-};
-$('copySub').onclick = () => {
-  if (!repo) return toast('Ссылка подписки доступна на *.github.io (нужен репозиторий)');
-  const c = $('country').value, p = $('proto').value, file = c || region || p || 'all';
-  copy(`${RAW}/sub/${file}.txt`, `Ссылка подписки скопирована (${file})`);
-};
+$('fmt').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; fmt = b.dataset.f;
+  $('fmt').querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b)); render(); };
 $('regions').innerHTML = Object.entries(REGION_LABEL).map(([k, v]) =>
   `<button class="chip border border-slate-600 rounded-full px-4 py-1.5 text-sm" data-r="${k}" aria-pressed="${k === ''}">${v}</button>`).join('');
-$('regions').onclick = (e) => {
-  const b = e.target.closest('button'); if (!b) return;
-  region = b.dataset.r;
-  $('regions').querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b));
-  render();
-};
+$('regions').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; region = b.dataset.r;
+  $('regions').querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b)); render(); };
+document.querySelector('.GRID').className = document.querySelector('.GRID').className.replace('GRID', GRID);
 refresh(false);
 </script>
 </body>
