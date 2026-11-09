@@ -35,6 +35,47 @@ const flag = (t) => {
   return m ? [...m[0]].map((c) => String.fromCharCode(c.codePointAt(0) - 0x1f1e6 + 65)).join('') : '';
 };
 
+const FPS = ['chrome', 'firefox', 'safari', 'ios', 'android', 'edge', '360', 'qq', 'random', 'randomized'];
+const NETS = { tcp: 'tcp', raw: 'tcp', ws: 'ws', grpc: 'grpc', gun: 'grpc', httpupgrade: 'httpupgrade', xhttp: 'xhttp', splithttp: 'xhttp', h2: 'h2', http: 'h2', kcp: 'kcp', quic: 'quic' };
+const okHost = (h) => /^(?=.{1,253}$)([a-z0-9-]+\.)+[a-z][a-z0-9-]+$/i.test(h);
+// Приводит VLESS-ссылку к строгому единому виду. Возвращает null, если ключ непригоден (битый UUID, нет pbk у Reality и т.п.).
+function sanitizeVlessUri(raw) {
+  let u; try { u = new URL(String(raw).trim()); } catch { return null; }
+  if (u.protocol !== 'vless:') return null;
+  let id; try { id = decodeURIComponent(u.username).toLowerCase(); } catch { return null; }
+  const host = u.hostname, port = +u.port;
+  if (!/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(id) || !host || !(port > 0 && port < 65536)) return null;
+  const g = (k) => (u.searchParams.get(k) || '').trim();
+  const net = NETS[g('type').toLowerCase()] || 'tcp';
+  let sec = g('security').toLowerCase();
+  if (sec === 'xtls') sec = 'tls';
+  if (!['tls', 'reality', 'none'].includes(sec)) sec = g('pbk') ? 'reality' : 'none';
+  const q = [['encryption', 'none']];
+  const add = (k, v) => { if (v !== '' && v != null) q.push([k, v]); };
+  const hp = g('host');
+  if (sec !== 'none') {
+    const pbk = g('pbk');
+    if (sec === 'reality' && !/^[A-Za-z0-9_-]{43}$/.test(pbk)) return null;
+    let sni = g('sni') || g('peer');
+    if (!okHost(sni)) sni = '';
+    if (!sni && sec === 'tls') sni = okHost(hp) ? hp : okHost(host) ? host : '';
+    let fp = g('fp').toLowerCase();
+    if (!FPS.includes(fp)) fp = 'chrome';
+    let flow = g('flow');
+    if (!(net === 'tcp' && /^xtls-rprx-vision(-udp443)?$/.test(flow))) flow = '';
+    add('flow', flow); add('security', sec); add('sni', sni); add('fp', fp);
+    if (sec === 'tls') add('alpn', g('alpn').split(',').map((s) => s.trim()).filter((s) => ['h2', 'http/1.1', 'h3'].includes(s)).join(','));
+    if (sec === 'reality') { add('pbk', pbk); const sid = g('sid'); add('sid', /^[0-9a-f]{0,16}$/i.test(sid) ? sid : ''); add('spx', g('spx')); }
+  } else add('security', 'none');
+  add('type', net);
+  if (net === 'tcp' && g('headerType') === 'http') { add('headerType', 'http'); add('host', hp); add('path', g('path') || '/'); }
+  if (['ws', 'httpupgrade', 'xhttp', 'h2'].includes(net)) { add('host', hp); const p = g('path') || '/'; add('path', p.startsWith('/') ? p : '/' + p); }
+  if (net === 'grpc') { add('serviceName', g('serviceName')); const m = g('mode'); if (['gun', 'multi'].includes(m)) add('mode', m); }
+  let name; try { name = decodeURIComponent(u.hash.slice(1)); } catch { name = u.hash.slice(1); }
+  name = (name.replace(/[\u0000-\u001f]/g, '').trim() || `${host}:${port}`).slice(0, 80);
+  return `vless://${id}@${host}:${port}?${q.map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&')}#${encodeURIComponent(name)}`;
+}
+
 function stream(net, sec, o) {
   if (!['tcp', 'ws', 'grpc', 'httpupgrade'].includes(net)) throw new Error('transport');
   if (net === 'tcp' && o.type && o.type !== 'none') throw new Error('http header');
@@ -54,6 +95,7 @@ function parse(link) {
   link = link.trim();
   const p = (link.match(/^(vless|vmess|trojan|ss):\/\//) || [])[1];
   if (!p) return null;
+  if (p === 'vless') { const s = sanitizeVlessUri(link); if (!s) throw new Error('vless'); link = s; }
   let host, port, name = '', out;
   const hash = link.indexOf('#');
   if (hash > -1) { try { name = decodeURIComponent(link.slice(hash + 1)); } catch { name = link.slice(hash + 1); } }
