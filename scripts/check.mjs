@@ -37,16 +37,19 @@ const flag = (t) => {
 
 const FPS = ['chrome', 'firefox', 'safari', 'ios', 'android', 'edge', '360', 'qq', 'random', 'randomized'];
 const NETS = { tcp: 'tcp', raw: 'tcp', ws: 'ws', grpc: 'grpc', gun: 'grpc', httpupgrade: 'httpupgrade', xhttp: 'xhttp', splithttp: 'xhttp', h2: 'h2', http: 'h2', kcp: 'kcp', quic: 'quic' };
+const HAPP_NETS = ['tcp', 'ws', 'grpc', 'httpupgrade', 'h2']; // транспорты, которые умеет ядро Sing-Box
 const okHost = (h) => /^(?=.{1,253}$)([a-z0-9-]+\.)+[a-z][a-z0-9-]+$/i.test(h);
-// Приводит VLESS-ссылку к строгому единому виду. Возвращает null, если ключ непригоден (битый UUID, нет pbk у Reality и т.п.).
-function sanitizeVlessUri(raw) {
+// Нормализует VLESS-ссылку. happ=true включает строгий режим Happ/Sing-Box.
+// Возвращает null, если ключ в этом режиме использовать нельзя.
+function sanitizeVlessUri(raw, happ = false) {
   let u; try { u = new URL(String(raw).trim()); } catch { return null; }
   if (u.protocol !== 'vless:') return null;
-  let id; try { id = decodeURIComponent(u.username).toLowerCase(); } catch { return null; }
+  let id; try { id = decodeURIComponent(u.username).trim().toLowerCase(); } catch { return null; }
   const host = u.hostname, port = +u.port;
   if (!/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(id) || !host || !(port > 0 && port < 65536)) return null;
   const g = (k) => (u.searchParams.get(k) || '').trim();
   const net = NETS[g('type').toLowerCase()] || 'tcp';
+  if (happ && !HAPP_NETS.includes(net)) return null;
   let sec = g('security').toLowerCase();
   if (sec === 'xtls') sec = 'tls';
   if (!['tls', 'reality', 'none'].includes(sec)) sec = g('pbk') ? 'reality' : 'none';
@@ -59,22 +62,31 @@ function sanitizeVlessUri(raw) {
     let sni = g('sni') || g('peer');
     if (!okHost(sni)) sni = '';
     if (!sni && sec === 'tls') sni = okHost(hp) ? hp : okHost(host) ? host : '';
+    if (!sni && sec === 'reality' && happ) return null; // Happ требует SNI для REALITY
     let fp = g('fp').toLowerCase();
-    if (!FPS.includes(fp)) fp = 'chrome';
+    if (happ || !FPS.includes(fp)) fp = 'chrome';
     let flow = g('flow');
     if (!(net === 'tcp' && /^xtls-rprx-vision(-udp443)?$/.test(flow))) flow = '';
     add('flow', flow); add('security', sec); add('sni', sni); add('fp', fp);
     if (sec === 'tls') add('alpn', g('alpn').split(',').map((s) => s.trim()).filter((s) => ['h2', 'http/1.1', 'h3'].includes(s)).join(','));
-    if (sec === 'reality') { add('pbk', pbk); const sid = g('sid'); add('sid', /^[0-9a-f]{0,16}$/i.test(sid) ? sid : ''); add('spx', g('spx')); }
+    if (sec === 'reality') {
+      add('pbk', pbk);
+      let sid = g('sid'); if (!/^[0-9a-f]{0,16}$/i.test(sid)) sid = '';
+      if (happ) q.push(['sid', sid]); else add('sid', sid);
+      add('spx', g('spx'));
+    }
   } else add('security', 'none');
   add('type', net);
   if (net === 'tcp' && g('headerType') === 'http') { add('headerType', 'http'); add('host', hp); add('path', g('path') || '/'); }
   if (['ws', 'httpupgrade', 'xhttp', 'h2'].includes(net)) { add('host', hp); const p = g('path') || '/'; add('path', p.startsWith('/') ? p : '/' + p); }
   if (net === 'grpc') { add('serviceName', g('serviceName')); const m = g('mode'); if (['gun', 'multi'].includes(m)) add('mode', m); }
   let name; try { name = decodeURIComponent(u.hash.slice(1)); } catch { name = u.hash.slice(1); }
-  name = (name.replace(/[\u0000-\u001f]/g, '').trim() || `${host}:${port}`).slice(0, 80);
+  name = name.replace(/[\u0000-\u001f]/g, ' ');
+  if (happ) name = name.replace(/[^\p{L}\p{N}\p{Regional_Indicator}\p{Extended_Pictographic} ._|:@()\[\]-]/gu, '');
+  name = (name.replace(/\s+/g, ' ').trim() || `${host}:${port}`).slice(0, 80);
   return `vless://${id}@${host}:${port}?${q.map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&')}#${encodeURIComponent(name)}`;
 }
+const sanitizeVlessForHapp = (raw) => sanitizeVlessUri(raw, true);
 
 function stream(net, sec, o) {
   if (!['tcp', 'ws', 'grpc', 'httpupgrade'].includes(net)) throw new Error('transport');
@@ -131,7 +143,7 @@ function parse(link) {
   return { p, h: host, o: port, n: name.slice(0, 80), c: flag(name), l: link, out };
 }
 
-async function collect() {
+async function collect(prev) {
   const res = await Promise.allSettled(SOURCES.map(async (u) => {
     const r = await fetch(u, { signal: AbortSignal.timeout(20000) });
     if (!r.ok) throw new Error(r.status);
@@ -144,12 +156,17 @@ async function collect() {
     if (r.status !== 'fulfilled') continue;
     for (const line of r.value.split(/\r?\n/)) {
       let n; try { n = parse(line); } catch { bad++; continue; }
-      const k = n && `${n.p}|${n.h}|${n.o}`;
+      const k = n && `${n.h}:${n.o}`; // дубликаты отсекаются по IP:PORT
       if (n && !seen.has(k)) { seen.add(k); all.push(n); }
     }
   }
   console.log(`sources ok: ${res.filter((r) => r.status === 'fulfilled').length}/${SOURCES.length}, valid: ${all.length}, invalid: ${bad}`);
-  return all.sort(() => Math.random() - 0.5).slice(0, MAX_TEST);
+  const known = []; // узлы, уже проходившие проверку раньше, тестируются первыми
+  for (const x of prev.values()) {
+    if (!x.u || !x.u[1]) continue;
+    try { const n = parse(x.l); const k = n && `${n.h}:${n.o}`; if (n && !seen.has(k)) { seen.add(k); known.push(n); } } catch { /* пропуск */ }
+  }
+  return [...known, ...all.sort(() => Math.random() - 0.5)].slice(0, MAX_TEST);
 }
 
 // Реальная проверка: поднимаем Xray с этим ключом и делаем HTTPS-запрос через него.
@@ -174,23 +191,29 @@ async function test(n, port) {
 }
 
 async function geo(nodes) {
-  const need = nodes.filter((x) => !x.c);
+  const need = nodes;
   for (let i = 0; i < need.length; i += 100) {
     const part = need.slice(i, i + 100);
     try {
-      const r = await fetch('http://ip-api.com/batch?fields=countryCode', { method: 'POST', body: JSON.stringify(part.map((x) => x.h)) });
-      (await r.json()).forEach((g, k) => { part[k].c = g.countryCode || ''; });
+      const r = await fetch('http://ip-api.com/batch?fields=countryCode,city', { method: 'POST', body: JSON.stringify(part.map((x) => x.h)) });
+      (await r.json()).forEach((g, k) => { part[k].c = g.countryCode || part[k].c; part[k].city = g.city || ''; });
     } catch { /* без страны */ }
     await sleep(1500);
   }
 }
 
-const list = await collect();
+const prev = new Map();
+try { for (const x of JSON.parse(await fs.readFile('data/nodes.json', 'utf8')).nodes) prev.set(`${x.h}:${x.o}`, x); } catch { /* первого запуска ещё не было */ }
+const list = await collect(prev);
 let idx = 0;
 await Promise.all(Array.from({ length: PAR }, async (_, w) => {
   while (idx < list.length) { const n = list[idx++]; n.ms = await test(n, 20000 + w); }
 }));
 
+for (const n of list) { // накопление аптайма: [проверок, успешных]
+  const o = prev.get(`${n.h}:${n.o}`);
+  n.u = [((o && o.u && o.u[0]) || 0) + 1, ((o && o.u && o.u[1]) || 0) + (n.ms !== null ? 1 : 0)];
+}
 const alive = list.filter((n) => n.ms !== null).sort((a, b) => a.ms - b.ms);
 const dead = list.filter((n) => n.ms === null).slice(0, KEEP_DEAD);
 console.log(`tested: ${list.length}, alive: ${alive.length}`);
@@ -204,11 +227,18 @@ await fs.writeFile('data/nodes.json', JSON.stringify({ updated: new Date().toISO
 
 await fs.rm('sub', { recursive: true, force: true });
 await fs.mkdir('sub', { recursive: true });
+const toHapp = (x) => x.p === 'vless' ? sanitizeVlessForHapp(x.l) : x.l;
+const good = alive.filter((x) => x.u[0] < 3 || x.u[1] / x.u[0] >= 0.6); // высокий аптайм или ещё мало данных
+await fs.mkdir('sub/happ', { recursive: true });
 const write = async (name, arr) => {
   if (!arr.length) return; // пустой файл клиенты считают невалидной подпиской
-  await fs.writeFile(`sub/${name}.txt`, Buffer.from(arr.slice(0, MAX_SUB).map((x) => x.l).join('\n')).toString('base64'));
+  const std = arr.slice(0, MAX_SUB).map((x) => x.l).join('\n');
+  const hp = arr.map(toHapp).filter(Boolean).slice(0, MAX_SUB).join('\n');
+  await fs.writeFile(`sub/${name}.txt`, Buffer.from(std).toString('base64'));
+  if (hp) await fs.writeFile(`sub/happ/${name}.txt`, Buffer.from(hp).toString('base64'));
 };
-await write('all', alive);
-for (const p of ['vless', 'vmess', 'trojan', 'ss']) await write(p, alive.filter((x) => x.p === p));
-for (const [r, cs] of Object.entries(REGIONS)) await write(r, alive.filter((x) => cs.includes(x.c)));
-for (const c of new Set(alive.map((x) => x.c).filter(Boolean))) await write(c, alive.filter((x) => x.c === c));
+await write('all', good);
+await write('reality', good.filter((x) => /[?&]security=reality/.test(x.l)));
+for (const p of ['vless', 'vmess', 'trojan', 'ss']) await write(p, good.filter((x) => x.p === p));
+for (const [r, cs] of Object.entries(REGIONS)) await write(r, good.filter((x) => cs.includes(x.c)));
+for (const c of new Set(good.map((x) => x.c).filter(Boolean))) await write(c, good.filter((x) => x.c === c));
