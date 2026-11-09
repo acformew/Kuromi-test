@@ -1,0 +1,35 @@
+name: check-nodes
+on:
+  schedule:
+    - cron: '0 */3 * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: check-nodes
+  cancel-in-progress: true
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Download Xray-core
+        run: |
+          mkdir -p bin
+          curl -fsSL https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip -o x.zip
+          unzip -o x.zip xray -d bin
+          chmod +x bin/xray
+      - name: Test nodes through real proxy connections
+        run: node scripts/check.mjs
+      - name: Commit results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data sub
+          git diff --cached --quiet && exit 0
+          git commit -m "update nodes $(date -u +%F-%H:%M)"
+          git push
