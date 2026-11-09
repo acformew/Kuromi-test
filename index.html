@@ -12,20 +12,21 @@
   .chip[aria-pressed=true]{background:#f0b44c;color:#10141c;border-color:#f0b44c}
   :focus-visible{outline:2px solid #f0b44c;outline-offset:2px}
   @keyframes spin{to{transform:rotate(360deg)}} .spin{animation:spin .8s linear infinite}
-  @media (prefers-reduced-motion:reduce){.spin{animation-duration:2s}}
+  @media (prefers-reduced-motion:reduce){.spin,.animate-pulse{animation:none}}
 </style>
 </head>
 <body class="min-h-screen">
 <main class="max-w-3xl mx-auto px-4 py-8">
-  <header class="flex items-start gap-3">
-    <div class="flex-1">
-      <h1 class="text-3xl font-bold tracking-tight">Рабочие VPN-узлы</h1>
-      <p id="status" class="text-slate-400 mt-1 text-sm">Загрузка…</p>
+  <header>
+    <h1 class="text-3xl font-bold tracking-tight">Рабочие VPN-узлы</h1>
+    <p id="status" class="text-slate-400 mt-1 text-sm">Загрузка…</p>
+    <div class="flex flex-wrap gap-2 mt-4">
+      <button id="refresh" class="flex items-center gap-2 bg-[#f0b44c] text-[#10141c] font-semibold rounded-lg px-4 py-2 text-sm disabled:opacity-60">
+        <svg id="spin" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
+        <span>Обновить список</span>
+      </button>
+      <button id="recheck" class="border border-slate-600 rounded-lg px-4 py-2 text-sm disabled:opacity-60">Перепроверить пинг</button>
     </div>
-    <button id="refresh" class="flex items-center gap-2 border border-slate-600 rounded-lg px-4 py-2 text-sm">
-      <svg id="spin" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
-      Обновить список
-    </button>
   </header>
 
   <section class="mt-6 space-y-3" aria-label="Фильтры">
@@ -38,113 +39,349 @@
         <option value="vmess">VMess</option><option value="trojan">Trojan</option><option value="ss">Shadowsocks</option>
       </select>
       <label class="flex items-center gap-2 text-sm px-2"><input id="onlyAlive" type="checkbox" checked> Только рабочие</label>
-    </div>
-    <div class="flex flex-wrap gap-2">
-      <button id="copyBest" class="bg-[#f0b44c] text-[#10141c] font-semibold rounded-lg px-4 py-2 text-sm">Скопировать лучший VLESS</button>
-      <button id="copySub" class="border border-slate-600 rounded-lg px-4 py-2 text-sm">Скопировать ссылку подписки</button>
+      <button id="copyBest" class="ml-auto border border-slate-600 rounded-lg px-3 py-2 text-sm">Лучший VLESS</button>
+      <button id="copySub" class="border border-slate-600 rounded-lg px-3 py-2 text-sm">Ссылка подписки</button>
     </div>
   </section>
 
   <ul id="list" class="mt-6 divide-y divide-slate-800 border border-slate-800 rounded-xl overflow-hidden"></ul>
-  <p class="text-xs text-slate-500 mt-6">Задержка измерена с сервера проверки через сам узел, поэтому у вас она будет другой. Публичные узлы могут видеть незашифрованный трафик.</p>
+  <p class="text-xs text-slate-500 mt-6">Пинг «браузер» показывает время отклика сервера из вашей сети, а не работу прокси. Оценка доверия описывает настройки транспорта и ничего не говорит о честности владельца узла: публичные узлы могут видеть незашифрованный трафик.</p>
 </main>
 
-<div id="modal" class="hidden fixed inset-0 bg-black/70 items-center justify-center p-4" role="dialog" aria-modal="true">
-  <div class="bg-white rounded-xl p-5 text-center">
-    <div id="qr" class="mx-auto"></div>
-    <button id="closeQr" class="mt-4 w-full bg-[#10141c] text-white rounded-lg py-2 text-sm">Закрыть</button>
+<div id="modal" class="hidden fixed inset-0 bg-black/70 items-center justify-center p-4 overflow-y-auto" role="dialog" aria-modal="true">
+  <div class="bg-[#151b26] border border-slate-700 rounded-2xl w-full max-w-lg my-auto p-5">
+    <div class="flex items-start gap-3"><h2 id="mTitle" class="flex-1 text-lg font-bold break-words"></h2>
+      <button id="closeM" class="text-slate-400 text-xl leading-none px-2" aria-label="Закрыть">×</button></div>
+    <div id="mBody" class="mt-4 space-y-4 text-sm"></div>
   </div>
 </div>
 <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 bg-slate-100 text-slate-900 rounded-lg px-4 py-2 text-sm hidden max-w-[90vw]"></div>
 
 <script>
-// Репозиторий определяется автоматически по адресу GitHub Pages. Для своего домена впишите "ник/репозиторий".
-const REPO = '';
-const m = location.hostname.match(/^(.+)\.github\.io$/);
-const repo = REPO || (m ? `${m[1]}/${location.pathname.split('/')[1] || m[1] + '.github.io'}` : '');
+const REPO = ''; // «ник/репозиторий»; на *.github.io определяется автоматически
+const mm = location.hostname.match(/^(.+)\.github\.io$/);
+const repo = REPO || (mm ? `${mm[1]}/${location.pathname.split('/')[1] || mm[1] + '.github.io'}` : '');
 const RAW = `https://raw.githubusercontent.com/${repo}/main`;
+const SOURCES = [
+  'https://raw.githubusercontent.com/barry-far/V2ray-Config/main/All_Configs_Sub.txt',
+  'https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/All_Configs_Sub.txt',
+  'https://raw.githubusercontent.com/MatinGhanbari/v2ray-CONFIGs/main/subscriptions/v2ray/super-sub.txt',
+  'https://raw.githubusercontent.com/mahdibland/V2RayAggregator/master/sub/sub_merge.txt',
+  'https://raw.githubusercontent.com/ebrasha/free-v2ray-public-list/main/V2Ray-Config-By-EbraSha.txt',
+];
 const REGION_LABEL = { '': 'Все', PL: 'Польша', EU: 'Европа', US: 'США', ASIA: 'Азия' };
 const REGIONS = {
   EU: 'DE NL FR GB FI SE NO PL IT ES CH AT CZ RO BG LT LV EE IE DK BE PT HU UA'.split(' '),
   US: ['US', 'CA'], ASIA: 'JP SG HK KR TW IN AE TH VN ID MY TR KZ'.split(' '), PL: ['PL'],
 };
+
+const FPS = ['chrome', 'firefox', 'safari', 'ios', 'android', 'edge', '360', 'qq', 'random', 'randomized'];
+const NETS = { tcp: 'tcp', raw: 'tcp', ws: 'ws', grpc: 'grpc', gun: 'grpc', httpupgrade: 'httpupgrade', xhttp: 'xhttp', splithttp: 'xhttp', h2: 'h2', http: 'h2', kcp: 'kcp', quic: 'quic' };
+const okHost = (h) => /^(?=.{1,253}$)([a-z0-9-]+\.)+[a-z][a-z0-9-]+$/i.test(h);
+// Приводит VLESS-ссылку к строгому единому виду. Возвращает null, если ключ непригоден (битый UUID, нет pbk у Reality и т.п.).
+function sanitizeVlessUri(raw) {
+  let u; try { u = new URL(String(raw).trim()); } catch { return null; }
+  if (u.protocol !== 'vless:') return null;
+  let id; try { id = decodeURIComponent(u.username).toLowerCase(); } catch { return null; }
+  const host = u.hostname, port = +u.port;
+  if (!/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(id) || !host || !(port > 0 && port < 65536)) return null;
+  const g = (k) => (u.searchParams.get(k) || '').trim();
+  const net = NETS[g('type').toLowerCase()] || 'tcp';
+  let sec = g('security').toLowerCase();
+  if (sec === 'xtls') sec = 'tls';
+  if (!['tls', 'reality', 'none'].includes(sec)) sec = g('pbk') ? 'reality' : 'none';
+  const q = [['encryption', 'none']];
+  const add = (k, v) => { if (v !== '' && v != null) q.push([k, v]); };
+  const hp = g('host');
+  if (sec !== 'none') {
+    const pbk = g('pbk');
+    if (sec === 'reality' && !/^[A-Za-z0-9_-]{43}$/.test(pbk)) return null;
+    let sni = g('sni') || g('peer');
+    if (!okHost(sni)) sni = '';
+    if (!sni && sec === 'tls') sni = okHost(hp) ? hp : okHost(host) ? host : '';
+    let fp = g('fp').toLowerCase();
+    if (!FPS.includes(fp)) fp = 'chrome';
+    let flow = g('flow');
+    if (!(net === 'tcp' && /^xtls-rprx-vision(-udp443)?$/.test(flow))) flow = '';
+    add('flow', flow); add('security', sec); add('sni', sni); add('fp', fp);
+    if (sec === 'tls') add('alpn', g('alpn').split(',').map((s) => s.trim()).filter((s) => ['h2', 'http/1.1', 'h3'].includes(s)).join(','));
+    if (sec === 'reality') { add('pbk', pbk); const sid = g('sid'); add('sid', /^[0-9a-f]{0,16}$/i.test(sid) ? sid : ''); add('spx', g('spx')); }
+  } else add('security', 'none');
+  add('type', net);
+  if (net === 'tcp' && g('headerType') === 'http') { add('headerType', 'http'); add('host', hp); add('path', g('path') || '/'); }
+  if (['ws', 'httpupgrade', 'xhttp', 'h2'].includes(net)) { add('host', hp); const p = g('path') || '/'; add('path', p.startsWith('/') ? p : '/' + p); }
+  if (net === 'grpc') { add('serviceName', g('serviceName')); const m = g('mode'); if (['gun', 'multi'].includes(m)) add('mode', m); }
+  let name; try { name = decodeURIComponent(u.hash.slice(1)); } catch { name = u.hash.slice(1); }
+  name = (name.replace(/[\u0000-\u001f]/g, '').trim() || `${host}:${port}`).slice(0, 80);
+  return `vless://${id}@${host}:${port}?${q.map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&')}#${encodeURIComponent(name)}`;
+}
+
+
 const $ = (id) => document.getElementById(id);
 const names = new Intl.DisplayNames(['ru'], { type: 'region' });
 const emoji = (c) => c && c.length === 2 ? String.fromCodePoint(...[...c].map((x) => x.charCodeAt(0) + 0x1f1e6 - 65)) : '🌐';
 const cname = (c) => { try { return names.of(c) || c; } catch { return c; } };
-const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const shuffle = (a) => a.map((x) => [Math.random(), x]).sort((p, q) => p[0] - q[0]).map((x) => x[1]);
+const b64d = (s) => { try { s = s.trim().replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '=';
+  return new TextDecoder().decode(Uint8Array.from(atob(s), (c) => c.charCodeAt(0))); } catch { return ''; } };
+const flagOf = (t) => { const m = (t || '').match(/[\u{1F1E6}-\u{1F1FF}]{2}/u);
+  return m ? [...m[0]].map((c) => String.fromCharCode(c.codePointAt(0) - 0x1f1e6 + 65)).join('') : ''; };
+const keyOf = (n) => `${n.p}|${n.h}|${n.o}`;
 const pingCls = (ms) => ms == null ? 'text-slate-400 bg-slate-800' : ms < 150 ? 'text-emerald-300 bg-emerald-950' : ms <= 350 ? 'text-amber-300 bg-amber-950' : 'text-red-300 bg-red-950';
-let nodes = [], region = '', shown = [];
+let nodes = [], region = '', shown = [], meta = null, busy = false;
 
-function toast(t) { const e = $('toast'); e.textContent = t; e.classList.remove('hidden'); clearTimeout(toast.t); toast.t = setTimeout(() => e.classList.add('hidden'), 2200); }
+function toast(t) { const e = $('toast'); e.textContent = t; e.classList.remove('hidden'); clearTimeout(toast.t); toast.t = setTimeout(() => e.classList.add('hidden'), 2400); }
 async function copy(t, msg) { try { await navigator.clipboard.writeText(t); toast(msg); } catch { prompt('Скопируйте вручную:', t); } }
-const ago = (iso) => { const m = Math.round((Date.now() - new Date(iso)) / 60000); return m < 60 ? `${m} мин назад` : `${Math.round(m / 60)} ч назад`; };
 
-async function load() {
-  if (!repo) { $('status').textContent = 'Не удалось определить репозиторий. Впишите его в константу REPO.'; return; }
-  $('spin').classList.add('spin'); $('refresh').disabled = true;
+// ---------- разбор и инспекция ключа ----------
+function inspect(l) {
+  const p = l.slice(0, l.indexOf('://'));
+  const r = { proto: p, net: 'tcp', sec: 'none', sni: '', fp: '', alpn: '', flow: '', host: '', port: 0, name: '' };
+  const hi = l.indexOf('#');
+  if (hi > -1) { try { r.name = decodeURIComponent(l.slice(hi + 1)); } catch { r.name = l.slice(hi + 1); } }
   try {
-    const r = await fetch(`${RAW}/data/nodes.json?t=${Date.now()}`, { cache: 'no-store' });
-    if (!r.ok) throw new Error(r.status);
-    const d = await r.json();
-    nodes = d.nodes;
-    const alive = nodes.filter((x) => x.ms != null).length;
-    $('status').innerHTML = `Рабочих: ${alive} из ${d.tested} проверенных. Проверка была ${ago(d.updated)}. ` +
-      `<a class="underline" target="_blank" rel="noopener" href="https://github.com/${repo}/actions/workflows/check.yml">Запустить проверку заново</a>`;
-    const codes = [...new Set(nodes.map((x) => x.c).filter(Boolean))].sort();
-    const cur = $('country').value;
-    $('country').innerHTML = '<option value="">Все страны</option>' + codes.map((c) => `<option value="${c}">${emoji(c)} ${cname(c)}</option>`).join('');
-    $('country').value = codes.includes(cur) ? cur : '';
-    render();
-  } catch {
-    $('status').textContent = 'Данных пока нет. Откройте Actions в репозитории и запустите проверку (Run workflow).';
-  } finally { $('spin').classList.remove('spin'); $('refresh').disabled = false; }
+    if (p === 'vmess') {
+      const j = JSON.parse(b64d(l.slice(8)));
+      Object.assign(r, { host: j.add, port: +j.port, net: j.net || 'tcp', sec: j.tls === 'tls' ? 'tls' : 'none', sni: j.sni || j.host || '', fp: j.fp || '', name: j.ps || r.name });
+    } else if (p === 'ss') {
+      let b = l.slice(5, hi > -1 ? hi : undefined).split('?')[0];
+      if (!b.includes('@')) b = b64d(b);
+      const hp = b.slice(b.lastIndexOf('@') + 1), i = hp.lastIndexOf(':');
+      Object.assign(r, { host: hp.slice(0, i).replace(/[\[\]]/g, ''), port: +hp.slice(i + 1), sec: 'ss', net: '' });
+    } else {
+      const u = new URL(l), g = (k) => u.searchParams.get(k) || '';
+      Object.assign(r, { host: u.hostname.replace(/[\[\]]/g, ''), port: +u.port, net: NETS[g('type')] || g('type') || 'tcp',
+        sec: g('security') || (p === 'trojan' ? 'tls' : 'none'), sni: g('sni') || g('peer'), fp: g('fp'), alpn: g('alpn'), flow: g('flow') });
+    }
+  } catch { /* битые поля остаются пустыми */ }
+  return r;
+}
+function parseLine(line) {
+  line = line.trim();
+  const p = (line.match(/^(vless|vmess|trojan|ss):\/\//) || [])[1];
+  if (!p) return null;
+  let l = line;
+  if (p === 'vless') { l = sanitizeVlessUri(line); if (!l) return null; }
+  const r = inspect(l);
+  if (!r.host || !(r.port > 0 && r.port < 65536)) return null;
+  return { p, h: r.host, o: r.port, n: (r.name || r.host).slice(0, 80), c: flagOf(r.name), l, ping: null, src: null, v: false };
+}
+const desc = (r) => r.proto === 'ss' ? 'SHADOWSOCKS' : [r.proto.toUpperCase(), ['tls', 'reality'].includes(r.sec) ? r.sec.toUpperCase() : '', (r.net || 'tcp').toUpperCase()].filter(Boolean).join(' + ');
+
+// ---------- шкала доверия ----------
+const KNOWN_SNI = /(google|gstatic|youtube|microsoft|office|bing|live\.com|cloudflare|yahoo|apple|icloud|amazon|aws|github|mozilla|samsung|nvidia|cisco|oracle|intel|ubuntu|speedtest|zoom|adobe)/i;
+const SAFE_PORTS = [443, 8443, 2053, 2083, 2096];
+const BAD_PORTS = [21, 22, 23, 25, 80, 110, 1080, 3128, 3389, 8080, 8888];
+function trust(x) {
+  const r = inspect(x.l), it = [];
+  const enc = ['tls', 'reality', 'ss'].includes(r.sec);
+  it.push([enc ? 40 : 0, enc ? `Шифрованный транспорт (${r.sec === 'ss' ? 'Shadowsocks' : r.sec.toUpperCase()})` : 'Транспорт без шифрования (нет TLS/REALITY)']);
+  const known = r.sni && KNOWN_SNI.test(r.sni);
+  it.push([known ? 30 : 0, known ? `Известная SNI-маскировка: ${r.sni}` : r.sni ? `SNI ${r.sni} не входит в список известных` : 'SNI не указан']);
+  const safePort = SAFE_PORTS.includes(x.o);
+  it.push([safePort ? 20 : 0, safePort ? `Стандартный защищённый порт ${x.o}` : `Нестандартный порт ${x.o}`]);
+  const fast = x.ping != null && x.ping < 200;
+  it.push([fast ? 10 : 0, fast ? `Низкий пинг (${x.ping} ms)` : 'Пинг высокий или не измерен']);
+  const bad = (!enc && ['vless', 'vmess'].includes(r.proto)) || BAD_PORTS.includes(x.o);
+  if (bad) it.push([-50, !enc && ['vless', 'vmess'].includes(r.proto) ? 'Штраф: ' + r.proto.toUpperCase() + ' без шифрования' : `Штраф: подозрительный порт ${x.o}`]);
+  const score = Math.max(0, Math.min(100, it.reduce((a, b) => a + b[0], 0)));
+  return { score, it, r, label: score >= 75 ? 'Высокая' : score >= 40 ? 'Средняя' : 'Низкая',
+    cls: score >= 75 ? 'text-emerald-300 bg-emerald-950' : score >= 40 ? 'text-amber-300 bg-amber-950' : 'text-red-300 bg-red-950' };
 }
 
+// ---------- загрузка ----------
+function merge(arr) {
+  const idx = new Map(nodes.map((n) => [keyOf(n), n]));
+  const added = [];
+  for (const n of arr) {
+    const old = idx.get(keyOf(n));
+    if (!old) { nodes.push(n); idx.set(keyOf(n), n); added.push(n); }
+    else if (n.v && old.src !== 'browser') { old.ping = n.ping; old.src = n.src; old.v = true; }
+  }
+  return added;
+}
+async function fetchPublished() {
+  if (!repo) return [];
+  const r = await fetch(`${RAW}/data/nodes.json?t=${Date.now()}`, { cache: 'no-store' });
+  if (!r.ok) throw new Error(r.status);
+  const d = await r.json();
+  meta = { updated: d.updated, tested: d.tested };
+  return d.nodes.map((x) => { const l = x.p === 'vless' ? sanitizeVlessUri(x.l) : x.l; if (!l) return null;
+    return { p: x.p, h: x.h, o: x.o, n: x.n || x.h, c: x.c || '', l, ping: x.ms ?? null, src: x.ms != null ? 'server' : null, v: x.ms != null }; }).filter(Boolean);
+}
+async function fetchSources() {
+  const res = await Promise.allSettled(shuffle(SOURCES).slice(0, 3).map(async (u) => {
+    const r = await fetch(u, { signal: AbortSignal.timeout(15000) });
+    if (!r.ok) throw new Error(r.status);
+    const t = await r.text();
+    return (t.includes('://') ? t : b64d(t)).split(/\r?\n/);
+  }));
+  const lines = shuffle(res.flatMap((r) => r.status === 'fulfilled' ? r.value : [])).slice(0, 400);
+  return lines.map(parseLine).filter(Boolean);
+}
+
+function skeleton() {
+  $('list').innerHTML = Array.from({ length: 7 }, () => `<li class="px-4 py-4 bg-[#151b26]"><div class="animate-pulse flex items-center gap-3">
+    <div class="w-7 h-7 rounded-full bg-slate-700"></div><div class="flex-1 space-y-2"><div class="h-3 w-2/3 rounded bg-slate-700"></div><div class="h-2 w-1/3 rounded bg-slate-800"></div></div>
+    <div class="h-6 w-16 rounded bg-slate-700"></div></div></li>`).join('');
+}
+function setBusy(b, label) {
+  busy = b; $('refresh').disabled = b; $('recheck').disabled = b;
+  $('spin').classList.toggle('spin', b && label === 'refresh');
+  $('recheck').textContent = b && label !== 'refresh' && label ? label : 'Перепроверить пинг';
+}
+
+async function refresh(more) {
+  if (busy) return;
+  setBusy(true, 'refresh'); skeleton();
+  let added = [];
+  try {
+    try { merge(await fetchPublished()); } catch { /* опубликованных данных может не быть */ }
+    if (more || !nodes.length) added = merge(await fetchSources());
+    if (!nodes.length) throw new Error('empty');
+    updateCountries(); render();
+    const fresh = added.filter((n) => !n.v).slice(0, 150);
+    if (fresh.length) { await pingAll(fresh, true); }
+    toast(more ? (added.length ? `Добавлено новых ключей: ${added.length}` : 'Новых ключей не нашлось') : 'Список загружен');
+  } catch {
+    $('list').innerHTML = '<li class="p-6 text-slate-400 text-sm">Не удалось получить ключи. Проверьте соединение и нажмите «Обновить список».</li>';
+  } finally { setBusy(false); updateStatus(); render(); }
+}
+
+// ---------- замер пинга в браузере ----------
+async function rtt(h, o, ms = 3000) {
+  const host = h.includes(':') ? `[${h}]` : h;
+  let best = null;
+  for (let i = 0; i < 2; i++) {
+    const c = new AbortController(), t = setTimeout(() => c.abort(), ms), s = performance.now();
+    let aborted = false;
+    try { await fetch(`https://${host}:${o}/`, { mode: 'no-cors', cache: 'no-store', signal: c.signal }); }
+    catch (e) { aborted = e.name === 'AbortError'; }
+    clearTimeout(t);
+    const d = Math.round(performance.now() - s);
+    if (!aborted && d >= 5) best = best === null ? d : Math.min(best, d); // <5 мс = браузер сам отклонил порт
+  }
+  return best;
+}
+async function pingAll(list, quiet) {
+  let done = 0, i = 0;
+  const upd = () => { if (!quiet) $('recheck').textContent = `Проверено ${done}/${list.length}`; };
+  if (!quiet) setBusy(true, 'x'); upd();
+  await Promise.all(Array.from({ length: 20 }, async () => {
+    while (i < list.length) {
+      const n = list[i++];
+      const ms = await rtt(n.h, n.o);
+      n.ping = ms; n.src = ms == null ? null : 'browser'; n.v = n.v && ms != null;
+      if (ms != null) n.v = n.v || true;
+      done++; upd();
+    }
+  }));
+  if (!quiet) { setBusy(false); render(); toast('Пинг обновлён, список отсортирован'); }
+}
+$('recheck').onclick = () => {
+  if (busy || !nodes.length) return;
+  const list = [...nodes].sort((a, b) => (a.ping ?? 1e9) - (b.ping ?? 1e9)).slice(0, 400);
+  pingAll(list, false);
+};
+
+// ---------- список ----------
+function updateStatus() {
+  const alive = nodes.filter((x) => x.ping != null).length;
+  const ago = meta ? (() => { const m = Math.round((Date.now() - new Date(meta.updated)) / 60000); return m < 60 ? `${m} мин назад` : `${Math.round(m / 60)} ч назад`; })() : '';
+  $('status').textContent = `Узлов: ${nodes.length}, с откликом: ${alive}.` + (meta ? ` Серверная проверка прокси: ${ago}.` : '');
+}
+function updateCountries() {
+  const codes = [...new Set(nodes.map((x) => x.c).filter(Boolean))].sort(), cur = $('country').value;
+  $('country').innerHTML = '<option value="">Все страны</option>' + codes.map((c) => `<option value="${c}">${emoji(c)} ${cname(c)}</option>`).join('');
+  $('country').value = codes.includes(cur) ? cur : '';
+}
 function render() {
   const c = $('country').value, p = $('proto').value, q = $('q').value.trim().toLowerCase(), only = $('onlyAlive').checked;
-  shown = nodes.filter((x) =>
-    (!only || x.ms != null) && (!c || x.c === c) && (!p || x.p === p) && (!region || REGIONS[region].includes(x.c)) &&
+  shown = nodes.filter((x) => (!only || x.ping != null) && (!c || x.c === c) && (!p || x.p === p) && (!region || REGIONS[region].includes(x.c)) &&
     (!q || `${x.n} ${x.h} ${x.c} ${cname(x.c)} ${emoji(x.c)}`.toLowerCase().includes(q)))
-    .sort((a, b) => (a.ms ?? 1e9) - (b.ms ?? 1e9));
-  const ul = $('list');
-  if (!shown.length) { ul.innerHTML = '<li class="p-6 text-slate-400 text-sm">Нет узлов по этим фильтрам. Смените регион, протокол или поиск.</li>'; return; }
-  ul.innerHTML = shown.slice(0, 200).map((x, i) => `
-    <li data-i="${i}" class="flex items-center gap-3 px-4 py-3 bg-[#151b26] cursor-pointer hover:bg-[#1a2230]">
+    .sort((a, b) => (a.ping ?? 1e9) - (b.ping ?? 1e9));
+  if (!shown.length) { $('list').innerHTML = '<li class="p-6 text-slate-400 text-sm">Нет узлов по этим фильтрам. Смените фильтры или нажмите «Обновить список».</li>'; return; }
+  $('list').innerHTML = shown.slice(0, 200).map((x, i) => {
+    const t = trust(x), r = t.r;
+    return `<li data-i="${i}" class="flex items-center gap-3 px-4 py-3 bg-[#151b26] cursor-pointer hover:bg-[#1a2230]">
       <span class="text-xl" aria-hidden="true">${emoji(x.c)}</span>
-      <div class="min-w-0 flex-1"><div class="truncate text-sm font-semibold">${esc(x.n || x.h)}</div>
-        <div class="text-xs text-slate-400 uppercase">${x.p}${x.c ? ' ' + x.c : ''}</div></div>
-      <span class="text-xs font-semibold rounded-md px-2 py-1 ${pingCls(x.ms)}">${x.ms == null ? 'N/A' : '⚡ ' + x.ms + ' ms'}</span>
-      <button data-copy="${i}" class="border border-slate-600 rounded-md px-3 py-1.5 text-xs">Копировать</button>
-    </li>`).join('');
+      <div class="min-w-0 flex-1"><div class="truncate text-sm font-semibold">${esc(x.n)}</div>
+        <div class="text-xs text-slate-400 truncate">${esc(desc(r))} · ${x.src === 'server' ? 'прокси проверен' : x.src === 'browser' ? 'отклик из браузера' : 'не проверен'}</div></div>
+      <span class="hidden sm:inline text-xs font-semibold rounded-md px-2 py-1 ${t.cls}" title="Шкала доверия: ${t.label}">🛡️ ${t.score}%</span>
+      <span class="text-xs font-semibold rounded-md px-2 py-1 whitespace-nowrap ${pingCls(x.ping)}">${x.ping == null ? 'N/A' : '⚡ ' + x.ping + ' ms'}</span>
+      <button data-copy="${i}" class="border border-slate-600 rounded-md px-3 py-1.5 text-xs">Копировать</button></li>`;
+  }).join('');
 }
 
+// ---------- карточка ключа ----------
+const geoCache = {};
+async function geo(host) {
+  if (geoCache[host]) return geoCache[host];
+  let ip = host;
+  if (!/^[\d.]+$/.test(host) && !host.includes(':')) {
+    const j = await (await fetch(`https://dns.google/resolve?name=${encodeURIComponent(host)}&type=A`)).json();
+    ip = (j.Answer || []).find((a) => a.type === 1)?.data;
+  }
+  if (!ip) throw new Error('dns');
+  const g = await (await fetch(`https://ipwho.is/${ip}`)).json();
+  if (!g.success) throw new Error('geo');
+  return (geoCache[host] = { ip, country: g.country, code: g.country_code, city: g.city, org: g.connection && g.connection.org });
+}
+function openDetails(x) {
+  const t = trust(x), r = t.r, row = (k, v, id) => `<div class="flex justify-between gap-4 border-b border-slate-800 pb-1.5"><span class="text-slate-400">${k}</span><span class="text-right break-all" ${id ? `id="${id}"` : ''}>${v}</span></div>`;
+  $('mTitle').textContent = `${emoji(x.c)} ${x.n}`;
+  $('mBody').innerHTML = `
+    <div class="flex items-center gap-3"><span class="text-xs font-semibold rounded-md px-2 py-1 ${t.cls}">🛡️ ${t.score}% · ${t.label} безопасность</span>
+      <span class="text-xs font-semibold rounded-md px-2 py-1 ${pingCls(x.ping)}">${x.ping == null ? 'N/A' : '⚡ ' + x.ping + ' ms'}</span></div>
+    <div class="space-y-1.5">
+      ${row('Страна', `<span id="gCountry">${x.c ? emoji(x.c) + ' ' + esc(cname(x.c)) : 'определяется…'}</span>`)}
+      ${row('Город', 'определяется…', 'gCity')}
+      ${row('Протокол и транспорт', esc(desc(r)))}
+      ${row('SNI / Server Name', esc(r.sni || 'не указан'))}
+      ${row('Fingerprint', esc(r.fp ? 'fp=' + r.fp : 'не указан'))}
+      ${r.flow ? row('Flow', esc(r.flow)) : ''}
+      ${row('Порт', x.o)}
+      ${row('Адрес', esc(x.h) + ' <span id="gIp" class="text-slate-400"></span>')}
+    </div>
+    <div><div class="font-semibold mb-1.5">Почему такая оценка</div><ul class="space-y-1">
+      ${t.it.map(([p, s]) => `<li class="flex gap-2"><span class="w-12 shrink-0 font-semibold ${p > 0 ? 'text-emerald-300' : p < 0 ? 'text-red-300' : 'text-slate-500'}">${p > 0 ? '+' : ''}${p}%</span><span class="text-slate-300">${esc(s)}</span></li>`).join('')}</ul></div>
+    <div><div class="font-semibold mb-1.5">Ключ</div>
+      <textarea id="rawKey" readonly rows="4" class="w-full bg-[#10141c] border border-slate-700 rounded-lg p-2 text-xs break-all">${esc(x.l)}</textarea>
+      <div class="flex gap-2 mt-2"><button id="mCopy" class="flex-1 bg-[#f0b44c] text-[#10141c] font-semibold rounded-lg py-2">Скопировать</button>
+        <button id="mQr" class="flex-1 border border-slate-600 rounded-lg py-2">Показать QR</button></div>
+      <div id="qrBox" class="hidden mt-3 bg-white rounded-xl p-3 w-fit mx-auto"></div></div>`;
+  $('mCopy').onclick = () => copy(x.l, 'Ключ скопирован');
+  $('mQr').onclick = () => { const b = $('qrBox'); b.classList.toggle('hidden');
+    if (!b.firstChild) new QRCode(b, { text: x.l, width: 240, height: 240, correctLevel: QRCode.CorrectLevel.L }); };
+  $('modal').classList.replace('hidden', 'flex');
+  geo(x.h).then((g) => { if ($('gCity')) { $('gCity').textContent = g.city || 'н/д'; $('gIp').textContent = `(${g.ip})`;
+    if (g.country) $('gCountry').textContent = `${emoji(g.code)} ${g.country}`; if (!x.c && g.code) { x.c = g.code; render(); } } })
+    .catch(() => { if ($('gCity')) { $('gCity').textContent = 'н/д'; if (!x.c) $('gCountry').textContent = 'н/д'; } });
+}
+
+// ---------- события ----------
 $('list').addEventListener('click', (e) => {
   const li = e.target.closest('li[data-i]'); if (!li) return;
   const x = shown[+li.dataset.i];
   if (e.target.closest('[data-copy]')) return copy(x.l, 'Ключ скопирован');
-  $('qr').innerHTML = '';
-  new QRCode($('qr'), { text: x.l, width: 260, height: 260, correctLevel: QRCode.CorrectLevel.L });
-  $('modal').classList.replace('hidden', 'flex');
+  openDetails(x);
 });
-$('closeQr').onclick = () => $('modal').classList.replace('flex', 'hidden');
-$('modal').onclick = (e) => { if (e.target === $('modal')) $('closeQr').click(); };
+$('closeM').onclick = () => $('modal').classList.replace('flex', 'hidden');
+$('modal').onclick = (e) => { if (e.target === $('modal')) $('closeM').click(); };
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') $('closeM').click(); });
 ['country', 'proto', 'onlyAlive'].forEach((id) => $(id).onchange = render);
 $('q').oninput = render;
-$('refresh').onclick = load;
-
+$('refresh').onclick = () => refresh(true);
 $('copyBest').onclick = () => {
-  const best = nodes.filter((x) => x.ms != null && x.p === 'vless').sort((a, b) => a.ms - b.ms)[0];
-  best ? copy(best.l, `Скопирован самый быстрый VLESS (${best.ms} ms)`) : toast('Рабочих VLESS-узлов нет');
+  const b = nodes.filter((x) => x.ping != null && x.p === 'vless').sort((a, c) => a.ping - c.ping)[0];
+  b ? copy(b.l, `Скопирован самый быстрый VLESS (${b.ping} ms)`) : toast('Узлов VLESS с откликом нет');
 };
 $('copySub').onclick = () => {
-  const c = $('country').value, p = $('proto').value;
-  const file = c || region || p || 'all';
-  const alive = nodes.filter((x) => x.ms != null && (!c || x.c === c) && (!region || REGIONS[region].includes(x.c)) && (!p || x.p === p));
-  if (!alive.length) return toast('Для этого фильтра нет рабочих узлов');
+  if (!repo) return toast('Ссылка подписки доступна на *.github.io (нужен репозиторий)');
+  const c = $('country').value, p = $('proto').value, file = c || region || p || 'all';
   copy(`${RAW}/sub/${file}.txt`, `Ссылка подписки скопирована (${file})`);
 };
-
 $('regions').innerHTML = Object.entries(REGION_LABEL).map(([k, v]) =>
   `<button class="chip border border-slate-600 rounded-full px-4 py-1.5 text-sm" data-r="${k}" aria-pressed="${k === ''}">${v}</button>`).join('');
 $('regions').onclick = (e) => {
@@ -153,7 +390,7 @@ $('regions').onclick = (e) => {
   $('regions').querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b));
   render();
 };
-load();
+refresh(false);
 </script>
 </body>
 </html>
