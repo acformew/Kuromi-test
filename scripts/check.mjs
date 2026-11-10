@@ -8,12 +8,13 @@ import path from 'node:path';
 
 const run = promisify(execFile);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// Источники, адаптированные под Рунет (REALITY / белые списки). Недоступный источник просто пропускается.
 const SOURCES = [
-  'https://raw.githubusercontent.com/barry-far/V2ray-Config/main/All_Configs_Sub.txt',
-  'https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/All_Configs_Sub.txt',
-  'https://raw.githubusercontent.com/MatinGhanbari/v2ray-CONFIGs/main/subscriptions/v2ray/super-sub.txt',
-  'https://raw.githubusercontent.com/mahdibland/V2RayAggregator/master/sub/sub_merge.txt',
-  'https://raw.githubusercontent.com/ebrasha/free-v2ray-public-list/main/V2Ray-Config-By-EbraSha.txt',
+  'https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/Vless-Reality-White-Lists-Rus-Mobile.txt',
+  'https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/BLACK_VLESS_RUS.txt',
+  'https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/WHITE-SNI-RU-all.txt',
+  'https://raw.githubusercontent.com/AvenCores/goida-vpn-configs/main/githubmirror/1.txt',
+  'https://raw.githubusercontent.com/kasesm/Free-Config/main/vless_raw.txt',
 ];
 const REGIONS = {
   EU: 'DE NL FR GB FI SE NO PL IT ES CH AT CZ RO BG LT LV EE IE DK BE PT HU UA'.split(' '),
@@ -22,12 +23,23 @@ const REGIONS = {
   PL: ['PL'],
 };
 const MAX_TEST = 1500, PAR = 40, MAX_SUB = 300;
-// Тест реального интернета: HTTPS-запрос к Cloudflare trace через узел (таймаут 5 с на запрос).
-const TRACE_URL = 'https://www.cloudflare.com/cdn-cgi/trace', TIMEOUT = 5;
+// Тест реального интернета: HTTPS-запрос к Cloudflare trace через узел (таймаут 4 с на запрос).
+const TRACE_URL = 'https://www.cloudflare.com/cdn-cgi/trace', TIMEOUT = 4;
 const AI_URLS = { claude: 'https://api.anthropic.com/v1/models', openai: 'https://api.openai.com/v1/models' };
 const UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36';
-const TLS_PORTS = [443, 8443, 2053, 2083, 2096]; // допустимые порты для TLS + ws/grpc
-const BAD_PORTS = [21, 22, 23, 25, 53, 80, 110, 143, 1080, 3128, 3389, 8000, 8080, 8081, 8888, 9090]; // «мусорные» порты
+const TLS_PORTS = [443, 8443]; // порты для TLS + ws/grpc
+const BAD_PORTS = [21, 22, 23, 25, 53, 80, 110, 143, 1080, 2083, 3128, 3389, 8000, 8080, 8081, 8888, 9090]; // «мусорные» порты; также отсекаются порты > 40000
+// Белый список SNI для REALITY: ТСПУ режет по домену в ClientHello, пропускаем только заведомо не заблокированные в РФ сервисы.
+// Совпадение: домен целиком или его поддомен.
+const SNI_WHITELIST = ['dl.google.com', 'www.google.com', 'play.google.com', 'fonts.googleapis.com', 'android.com',
+  'www.apple.com', 'icloud.com', 'itunes.apple.com', 'captive.apple.com',
+  'www.microsoft.com', 'azure.microsoft.com', 'live.com', 'bing.com',
+  'yahoo.com', 'www.yahoo.com', 'amazon.com', 'aws.amazon.com', 'cloudflare.com', 'samsung.com', 'nvidia.com', 'oracle.com', 'cisco.com', 'speedtest.net'];
+// Заблокированные в РФ домены: ключ с таким SNI выбрасывается сразу (в том числе для TLS-ключей).
+const SNI_BLOCKED = ['facebook.com', 'fb.com', 'meta.com', 'instagram.com', 'whatsapp.com', 'twitter.com', 'x.com', 't.co', 'discord.com',
+  'discord.gg', 'discordapp.com', 'bbc.com', 'bbc.co.uk', 'rutracker.org', 'linkedin.com', 'soundcloud.com', 'torproject.org'];
+const inDom = (h, list) => list.some((d) => h === d || h.endsWith('.' + d));
+const WHITELIST_TLS = false; // true: белый список SNI применяется и к TLS+ws/grpc (у них SNI = собственный домен узла, поэтому обычно выключено)
 // Адреса localhost/LAN/служебные: через них проверка «успешна» без выхода в интернет, такие узлы отбрасываются.
 const badHost = (h) => {
   h = String(h || '').toLowerCase();
@@ -124,33 +136,37 @@ function stream(net, sec, o) {
   return s;
 }
 
-// Разбор ссылки. В работу берутся ТОЛЬКО:
-//  а) vless:// + security=reality (транспорт tcp/grpc, валидные pbk и SNI);
-//  б) vless:// и trojan:// + security=tls + транспорт ws/grpc на портах TLS_PORTS.
-// ss://, vmess://, любые ключи без TLS/REALITY выбрасываются. Бросает ошибку на негодных ключах.
+// Разбор ссылки под ТСПУ. В работу берутся ТОЛЬКО:
+//  1) vless:// + security=reality, транспорт tcp (flow xtls-rprx-vision) или grpc, SNI из SNI_WHITELIST, валидный pbk;
+//  2) vless:// и trojan:// + security=tls, транспорт ws/grpc, порт 443/8443, валидный домен в SNI (не из SNI_BLOCKED).
+// ss://, vmess://, plain-tcp, trojan без TLS и всё прочее выбрасывается. Бросает ошибку на негодных ключах.
 function parse(link) {
   link = link.trim();
   const p = (link.match(/^(vless|trojan):\/\//) || [])[1];
   if (!p) return null;
-  let rawSni = ''; // SNI из исходной ссылки (санитайзер подставляет замену, а некорректный SNI нужно отсечь)
-  try { const o0 = new URL(link).searchParams; rawSni = (o0.get('sni') || o0.get('peer') || '').trim(); } catch { throw new Error('url'); }
-  if (rawSni && !okHost(rawSni)) throw new Error('bad sni');
+  let rawSni = ''; // SNI из исходной ссылки (санитайзер подставляет замену, а пустой/кривой SNI нужно отсечь)
+  try { const o0 = new URL(link).searchParams; rawSni = (o0.get('sni') || o0.get('peer') || '').trim().toLowerCase(); } catch { throw new Error('url'); }
+  if (rawSni && !okHost(rawSni)) throw new Error('bad sni'); // IP-адрес или мусор
   if (p === 'vless') { const s = sanitizeVlessUri(link); if (!s) throw new Error('vless'); link = s; }
   const u = new URL(link), q = Object.fromEntries(u.searchParams);
   const host = u.hostname.replace(/[\[\]]/g, ''), port = +u.port;
   if (!host || !u.username || !(port > 0 && port < 65536) || badHost(host)) throw new Error('addr');
-  if (BAD_PORTS.includes(port)) throw new Error('port');
+  if (BAD_PORTS.includes(port) || port > 40000) throw new Error('port');
   const net = (q.type || 'tcp').toLowerCase();
   const sec = (q.security || (p === 'trojan' ? 'tls' : 'none')).toLowerCase();
   let sni = rawSni;
   if (sec === 'reality') {
     if (p !== 'vless' || !['tcp', 'grpc'].includes(net)) throw new Error('reality transport');
-    if (!/^[A-Za-z0-9_-]{43}$/.test(q.pbk || '') || !sni) throw new Error('reality pbk/sni');
+    if (!/^[A-Za-z0-9_-]{43}$/.test(q.pbk || '')) throw new Error('reality pbk');
+    if (!sni) throw new Error('reality sni');
+    if (net === 'tcp' && !/^xtls-rprx-vision/.test(q.flow || '')) throw new Error('reality flow'); // Vision обязателен для tcp
+    if (inDom(sni, SNI_BLOCKED) || !inDom(sni, SNI_WHITELIST)) throw new Error('sni not whitelisted');
   } else if (sec === 'tls') {
     if (!['ws', 'grpc'].includes(net)) throw new Error('tls transport');
     if (!TLS_PORTS.includes(port)) throw new Error('tls port');
-    sni = sni || (q.sni || '').trim() || (okHost(host) ? host : '');
-    if (!okHost(sni)) throw new Error('sni');
+    sni = sni || (q.sni || '').trim().toLowerCase() || (okHost(host) ? host : '');
+    if (!okHost(sni) || inDom(sni, SNI_BLOCKED)) throw new Error('sni');
+    if (WHITELIST_TLS && !inDom(sni, SNI_WHITELIST)) throw new Error('sni not whitelisted');
   } else throw new Error('no tls'); // без TLS/REALITY ключи глушатся DPI
   const o = { ...q, sni, type: q.headerType, service: q.serviceName, insecure: q.allowInsecure || q.insecure }; // type = тип заголовка, не транспорт
   const st = stream(net, sec, o);
@@ -160,7 +176,7 @@ function parse(link) {
   let name = '';
   const hash = link.indexOf('#');
   if (hash > -1) { try { name = decodeURIComponent(link.slice(hash + 1)); } catch { name = link.slice(hash + 1); } }
-  return { p, h: host, o: port, n: name.slice(0, 80), c: flag(name), l: link, out };
+  return { p, h: host, o: port, n: name.slice(0, 80), c: flag(name), l: link, sni, wl: inDom(sni, SNI_WHITELIST), out };
 }
 
 async function collect(prev) {
@@ -214,6 +230,7 @@ async function trace(port) {
   if (!r || r.code !== '200' || !r.body.includes('ip=') || !r.body.includes('loc=')) return null;
   const t = traceOf(r.body);
   if (!IP_RE.test(t.ip || '') || !/^[A-Z]{2}$/.test(t.loc || '') || badHost(t.ip)) return null;
+  if (t.loc === 'RU') return null; // выход в РФ = трафик остаётся внутри цензуры
   if (DIRECT_IP && t.ip === DIRECT_IP) return null;
   return { ip: t.ip, loc: t.loc, ms: r.ms };
 }
@@ -298,6 +315,11 @@ const write = async (name, arr) => {
 await write('all', good);
 await write('reality', good.filter((x) => /[?&]security=reality/.test(x.l)));
 await write('claude', good.filter((x) => x.claude));
+// Подписки для РФ: приоритет REALITY на 443, затем остальной REALITY, затем TLS (ws/grpc); внутри группы по пингу.
+const prio = (x) => (/[?&]security=reality/.test(x.l) ? (x.o === 443 ? 0 : 1) : 2);
+const ru = [...good].sort((a, b) => prio(a) - prio(b) || a.ms - b.ms);
+await write('russia', ru);
+await write('russia-mobile', ru.filter((x) => prio(x) === 0)); // REALITY + порт 443
 for (const p of ['vless', 'trojan']) await write(p, good.filter((x) => x.p === p));
 for (const [r, cs] of Object.entries(REGIONS)) await write(r, good.filter((x) => cs.includes(x.c)));
 for (const c of new Set(good.map((x) => x.c).filter(Boolean))) await write(c, good.filter((x) => x.c === c));
