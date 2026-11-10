@@ -20,16 +20,24 @@ jobs:
       - name: Download Xray-core
         run: |
           mkdir -p bin
-          curl -fsSL https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip -o x.zip
+          for i in 1 2 3; do
+            curl -fsSL https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip -o x.zip && break
+            echo "retry $i"; sleep 5
+          done
           unzip -o x.zip xray -d bin
           chmod +x bin/xray
+          ./bin/xray version
       - name: Test nodes through real proxy connections
         run: node scripts/check.mjs
       - name: Commit results
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data sub
+          git add -A data sub
           git diff --cached --quiet && exit 0
           git commit -m "update nodes $(date -u +%F-%H:%M)"
-          git push
+          for i in 1 2 3; do
+            git pull --rebase -X theirs origin "${GITHUB_REF_NAME}" && git push && exit 0
+            sleep 5
+          done
+          exit 1
