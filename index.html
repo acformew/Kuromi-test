@@ -37,10 +37,11 @@
       <select id="country" class="bg-[#1a202c] border border-slate-700 rounded-lg px-3 py-2 text-sm"></select>
       <select id="proto" class="bg-[#1a202c] border border-slate-700 rounded-lg px-3 py-2 text-sm">
         <option value="">Все протоколы</option><option value="vless">VLESS</option>
-        <option value="vmess">VMess</option><option value="trojan">Trojan</option><option value="ss">Shadowsocks</option></select>
+        <option value="trojan">Trojan</option></select>
       <select id="sort" class="bg-[#1a202c] border border-slate-700 rounded-lg px-3 py-2 text-sm" aria-label="Сортировка">
         <option value="rec">Сортировка: рекомендуемые</option><option value="trust">По безопасности</option><option value="ping">По пингу</option></select>
       <label class="flex items-center gap-2 text-sm px-1"><input id="onlyReality" type="checkbox"> Только REALITY</label>
+      <label class="flex items-center gap-2 text-sm px-1"><input id="onlyAI" type="checkbox"> Работает с Claude / ChatGPT</label>
       <div class="ml-auto flex items-center gap-2 text-sm"><span class="text-slate-400">Формат:</span>
         <div id="fmt" class="flex gap-1"><button class="chip border border-slate-600 rounded-lg px-3 py-1.5" data-f="std" aria-pressed="true">Стандартный</button>
           <button class="chip border border-slate-600 rounded-lg px-3 py-1.5" data-f="happ" aria-pressed="false">Happ (Sing-Box)</button></div></div>
@@ -52,7 +53,7 @@
       <span>Регион / Флаг</span><span>Протокол</span><span>Безопасность</span><span>Задержка</span><span>Действия</span></div>
     <ul id="list" class="divide-y divide-slate-800"></ul>
   </div>
-  <p class="text-xs text-slate-500 mt-6">Оценка безопасности описывает настройки транспорта, а не честность владельца узла: публичные узлы могут видеть незашифрованный трафик. Страница только показывает результаты: каждый узел проверяется в GitHub Actions через реальный Xray (HTTPS-запрос через узел, ответ 204), мёртвые узлы в список не попадают. Задержка измерена с сервера GitHub, из вашей сети она будет другой.</p>
+  <p class="text-xs text-slate-500 mt-6">Оценка безопасности описывает настройки транспорта, а не честность владельца узла: публичные узлы могут видеть незашифрованный трафик. Страница только показывает результаты: каждый узел проверяется в GitHub Actions через реальный Xray (HTTPS-запрос к Cloudflare через узел, определяется выходной IP), мёртвые узлы в список не попадают. В список берутся только VLESS+REALITY и VLESS/Trojan+TLS (ws/grpc). Проверка идёт из дата-центра и не гарантирует работу в сети с DPI/ТСПУ, у конкретного провайдера результат может отличаться. Задержка измерена с сервера GitHub, из вашей сети она будет другой.</p>
 </main>
 
 <div id="modal" class="hidden fixed inset-0 bg-black/70 items-center justify-center p-4 overflow-y-auto" role="dialog" aria-modal="true">
@@ -116,11 +117,12 @@ function inspect(l) {
   } catch { /* битые поля остаются пустыми */ }
   return r;
 }
-// Принимает только записи, прошедшие реальный тест Xray на сервере (ms > 0). Всё остальное отбрасывается.
+// Принимает только записи, прошедшие реальный тест Xray на сервере (ping > 0). Всё остальное отбрасывается.
 function mkNode(x) {
-  if (!x || typeof x.l !== 'string' || !x.h || !(x.o > 0) || !Number.isFinite(x.ms) || x.ms <= 0) return null;
-  return { p: x.p, h: x.h, o: x.o, n: String(x.n || x.h).slice(0, 80), c: x.c || '', city: x.city || '', l: x.l,
-    hl: x.p === 'vless' ? (x.hl || null) : x.l, ping: Math.round(x.ms), u: x.u || null };
+  if (!x || typeof x.l !== 'string' || !x.h || !(x.o > 0) || !Number.isFinite(x.ping) || x.ping <= 0) return null;
+  return { p: x.p, h: x.h, o: x.o, n: String(x.n || x.h).slice(0, 80), c: x.c || x.loc || '', city: '', l: x.l,
+    hl: x.p === 'vless' ? (x.hl || null) : x.l, ping: Math.round(x.ping), ip: x.ip || '', loc: x.loc || '',
+    claude: x.claude === true, openai: x.openai === true, u: x.u || null };
 }
 const tag = (r) => r.proto === 'ss' ? 'SHADOWSOCKS' : [r.proto.toUpperCase(), ['tls', 'reality'].includes(r.sec) ? r.sec.toUpperCase() : '', (r.net || 'tcp').toUpperCase()].filter(Boolean).join(' + ');
 const shortTag = (r) => r.proto === 'ss' ? 'Shadowsocks' : r.proto.toUpperCase() + (r.sec === 'reality' ? ' REALITY' : r.sec === 'tls' ? ' TLS' : '');
@@ -210,9 +212,9 @@ function updateCountries() {
   $('country').value = codes.includes(cur) ? cur : '';
 }
 function render() {
-  const c = $('country').value, p = $('proto').value, q = $('q').value.trim().toLowerCase(), rl = $('onlyReality').checked, s = $('sort').value;
+  const c = $('country').value, p = $('proto').value, q = $('q').value.trim().toLowerCase(), rl = $('onlyReality').checked, ai = $('onlyAI').checked, s = $('sort').value;
   shown = nodes.filter((x) => (!c || x.c === c) && (!p || x.p === p) && (!region || REGIONS[region].includes(x.c)) &&
-    (!rl || trust(x).r.sec === 'reality') && (fmt !== 'happ' || x.hl) &&
+    (!rl || trust(x).r.sec === 'reality') && (!ai || (x.claude && x.openai)) && (fmt !== 'happ' || x.hl) &&
     (!q || `${x.n} ${x.h} ${x.c} ${cname(x.c)} ${x.city} ${emoji(x.c)}`.toLowerCase().includes(q)));
   shown.sort(s === 'ping' ? (a, b) => (a.ping ?? 1e9) - (b.ping ?? 1e9)
     : s === 'trust' ? (a, b) => trust(b).score - trust(a).score || (a.ping ?? 1e9) - (b.ping ?? 1e9)
@@ -223,7 +225,8 @@ function render() {
     return `<li data-i="${i}" class="grid grid-cols-2 ${GRID} gap-x-3 gap-y-2 items-center px-4 py-3 bg-[#151b26] cursor-pointer hover:bg-[#1a2230]">
       <div class="col-span-2 sm:col-span-1 flex items-center gap-3 min-w-0"><span class="text-xl" aria-hidden="true">${emoji(x.c)}</span>
         <div class="min-w-0"><div class="truncate text-sm font-semibold">${esc(x.c ? cname(x.c) : 'Неизвестно')}${x.city ? ', ' + esc(x.city) : ''}</div>
-        <div class="truncate text-xs text-slate-400">${esc(x.n)}</div></div></div>
+        <div class="truncate text-xs text-slate-400">${esc(x.n)}</div>
+        ${x.claude ? '<span class="inline-block mt-1 text-[11px] font-semibold rounded px-1.5 py-0.5 text-emerald-300 bg-emerald-950">✅ Подходит для Claude</span>' : ''}</div></div>
       <div class="text-xs text-slate-300 truncate">${esc(tag(t.r))}</div>
       <div><span class="text-xs font-semibold rounded-md px-2 py-1 whitespace-nowrap ${t.cls}">${t.dot} ${t.score}% ${t.label}</span></div>
       <div><span class="text-xs font-semibold rounded-md px-2 py-1 whitespace-nowrap ${pingCls(x.ping)}" title="Задержка HTTPS-запроса через узел, замер GitHub Actions">⚡ ${x.ping} ms</span></div>
@@ -241,8 +244,10 @@ function openDetails(x) {
     <div class="flex flex-wrap items-center gap-2"><span class="text-xs font-semibold rounded-md px-2 py-1 ${t.cls}">${t.dot} ${t.score}% ${t.label}</span>
       <span class="text-xs font-semibold rounded-md px-2 py-1 ${pingCls(x.ping)}">⚡ ${x.ping} ms</span></div>
     <div class="space-y-1.5">
-      ${row('Страна', x.c ? emoji(x.c) + ' ' + esc(cname(x.c)) : 'н/д')}
-      ${row('Город', esc(x.city) || 'н/д')}
+      ${row('Выходной IP', esc(x.ip) || 'н/д')}
+      ${row('Страна выхода', x.loc ? emoji(x.loc) + ' ' + esc(cname(x.loc)) : 'н/д')}
+      ${row('Claude (api.anthropic.com)', x.claude ? '<span class="text-emerald-300">✅ доступен</span>' : '<span class="text-red-300">⛔ заблокирован</span>')}
+      ${row('ChatGPT (api.openai.com)', x.openai ? '<span class="text-emerald-300">✅ доступен</span>' : '<span class="text-red-300">⛔ заблокирован</span>')}
       ${row('Протокол и транспорт', esc(tag(r)))}
       ${row('SNI / Server Name', esc(r.sni || 'не указан'))}
       ${row('Fingerprint', esc(r.fp ? 'fp=' + r.fp : 'не указан'))}
@@ -274,8 +279,8 @@ $('best').onclick = () => {
 };
 $('copySub').onclick = () => {
   if (!repo) return toast('Ссылка подписки доступна на *.github.io (нужен репозиторий)');
-  const c = $('country').value, p = $('proto').value, rl = $('onlyReality').checked;
-  const file = c || region || (rl ? 'reality' : '') || p || 'all';
+  const c = $('country').value, p = $('proto').value, rl = $('onlyReality').checked, ai = $('onlyAI').checked;
+  const file = c || region || (ai ? 'claude' : '') || (rl ? 'reality' : '') || p || 'all';
   copy(`${RAW}/sub/${fmt === 'happ' ? 'happ/' : ''}${file}.txt`, `Ссылка подписки скопирована (${file}, ${fmt === 'happ' ? 'формат Happ' : 'стандартный'}). Клиент будет обновлять её сам.`, 3500);
 };
 $('list').addEventListener('click', (e) => {
@@ -287,7 +292,7 @@ $('list').addEventListener('click', (e) => {
 $('closeM').onclick = () => $('modal').classList.replace('flex', 'hidden');
 $('modal').onclick = (e) => { if (e.target === $('modal')) $('closeM').click(); };
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') $('closeM').click(); });
-['country', 'proto', 'sort', 'onlyReality'].forEach((id) => $(id).onchange = render);
+['country', 'proto', 'sort', 'onlyReality', 'onlyAI'].forEach((id) => $(id).onchange = render);
 $('q').oninput = render;
 $('refresh').onclick = () => refresh(true);
 $('fmt').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; fmt = b.dataset.f;
