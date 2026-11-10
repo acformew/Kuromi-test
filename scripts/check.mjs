@@ -22,13 +22,12 @@ const REGIONS = {
   PL: ['PL'],
 };
 const MAX_TEST = 1500, PAR = 40, MAX_SUB = 300;
-// Жёсткая проверка: узел живой только если через него реально пришёл HTTP 204 (дважды подряд).
-const TEST_URL = 'https://www.gstatic.com/generate_204', TIMEOUT = 5; // секунд на один запрос
-const UUID = /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
-const VMESS_SEC = ['auto', 'aes-128-gcm', 'chacha20-poly1305', 'none', 'zero'];
-// Только AEAD-шифры Shadowsocks: старые потоковые (rc4-md5, aes-*-cfb и т.д.) современный Xray не поддерживает.
-const SS_OK = new Set(['aes-128-gcm', 'aes-256-gcm', 'chacha20-poly1305', 'chacha20-ietf-poly1305', 'xchacha20-poly1305',
-  'xchacha20-ietf-poly1305', '2022-blake3-aes-128-gcm', '2022-blake3-aes-256-gcm', '2022-blake3-chacha20-poly1305']);
+// Тест реального интернета: HTTPS-запрос к Cloudflare trace через узел (таймаут 5 с на запрос).
+const TRACE_URL = 'https://www.cloudflare.com/cdn-cgi/trace', TIMEOUT = 5;
+const AI_URLS = { claude: 'https://api.anthropic.com/v1/models', openai: 'https://api.openai.com/v1/models' };
+const UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36';
+const TLS_PORTS = [443, 8443, 2053, 2083, 2096]; // допустимые порты для TLS + ws/grpc
+const BAD_PORTS = [21, 22, 23, 25, 53, 80, 110, 143, 1080, 3128, 3389, 8000, 8080, 8081, 8888, 9090]; // «мусорные» порты
 // Адреса localhost/LAN/служебные: через них проверка «успешна» без выхода в интернет, такие узлы отбрасываются.
 const badHost = (h) => {
   h = String(h || '').toLowerCase();
@@ -125,51 +124,42 @@ function stream(net, sec, o) {
   return s;
 }
 
-// Разбор ссылки: валидирует структуру и сразу строит outbound для Xray. Бросает ошибку на битых ключах.
+// Разбор ссылки. В работу берутся ТОЛЬКО:
+//  а) vless:// + security=reality (транспорт tcp/grpc, валидные pbk и SNI);
+//  б) vless:// и trojan:// + security=tls + транспорт ws/grpc на портах TLS_PORTS.
+// ss://, vmess://, любые ключи без TLS/REALITY выбрасываются. Бросает ошибку на негодных ключах.
 function parse(link) {
   link = link.trim();
-  const p = (link.match(/^(vless|vmess|trojan|ss):\/\//) || [])[1];
+  const p = (link.match(/^(vless|trojan):\/\//) || [])[1];
   if (!p) return null;
+  let rawSni = ''; // SNI из исходной ссылки (санитайзер подставляет замену, а некорректный SNI нужно отсечь)
+  try { const o0 = new URL(link).searchParams; rawSni = (o0.get('sni') || o0.get('peer') || '').trim(); } catch { throw new Error('url'); }
+  if (rawSni && !okHost(rawSni)) throw new Error('bad sni');
   if (p === 'vless') { const s = sanitizeVlessUri(link); if (!s) throw new Error('vless'); link = s; }
-  let host, port, name = '', out;
+  const u = new URL(link), q = Object.fromEntries(u.searchParams);
+  const host = u.hostname.replace(/[\[\]]/g, ''), port = +u.port;
+  if (!host || !u.username || !(port > 0 && port < 65536) || badHost(host)) throw new Error('addr');
+  if (BAD_PORTS.includes(port)) throw new Error('port');
+  const net = (q.type || 'tcp').toLowerCase();
+  const sec = (q.security || (p === 'trojan' ? 'tls' : 'none')).toLowerCase();
+  let sni = rawSni;
+  if (sec === 'reality') {
+    if (p !== 'vless' || !['tcp', 'grpc'].includes(net)) throw new Error('reality transport');
+    if (!/^[A-Za-z0-9_-]{43}$/.test(q.pbk || '') || !sni) throw new Error('reality pbk/sni');
+  } else if (sec === 'tls') {
+    if (!['ws', 'grpc'].includes(net)) throw new Error('tls transport');
+    if (!TLS_PORTS.includes(port)) throw new Error('tls port');
+    sni = sni || (q.sni || '').trim() || (okHost(host) ? host : '');
+    if (!okHost(sni)) throw new Error('sni');
+  } else throw new Error('no tls'); // без TLS/REALITY ключи глушатся DPI
+  const o = { ...q, sni, type: q.headerType, service: q.serviceName, insecure: q.allowInsecure || q.insecure }; // type = тип заголовка, не транспорт
+  const st = stream(net, sec, o);
+  const out = p === 'vless'
+    ? { protocol: 'vless', settings: { vnext: [{ address: host, port, users: [{ id: decodeURIComponent(u.username), encryption: 'none', flow: q.flow || undefined }] }] }, streamSettings: st }
+    : { protocol: 'trojan', settings: { servers: [{ address: host, port, password: decodeURIComponent(u.username) }] }, streamSettings: st };
+  let name = '';
   const hash = link.indexOf('#');
   if (hash > -1) { try { name = decodeURIComponent(link.slice(hash + 1)); } catch { name = link.slice(hash + 1); } }
-  if (p === 'vmess') {
-    const j = JSON.parse(b64d(link.slice(8)));
-    if (!j.add || !j.port || !j.id || !UUID.test(String(j.id).trim())) throw new Error('vmess');
-    if (+j.aid) throw new Error('alterId'); // legacy VMess (MD5) в актуальном Xray не работает
-    const sc = String(j.scy || 'auto').toLowerCase();
-    if (!VMESS_SEC.includes(sc)) throw new Error('vmess security');
-    host = String(j.add).trim(); port = +j.port; name = j.ps || name;
-    out = { protocol: 'vmess', settings: { vnext: [{ address: host, port, users: [{ id: String(j.id).trim(), alterId: 0, security: sc }] }] },
-      streamSettings: stream(j.net || 'tcp', j.tls === 'tls' ? 'tls' : 'none',
-        { sni: j.sni, host: j.host, path: j.path, service: j.path, fp: j.fp, alpn: j.alpn, type: j.type }) };
-  } else if (p === 'ss') {
-    if (/[?&]plugin=/.test(link)) throw new Error('plugin');
-    let b = link.slice(5, hash > -1 ? hash : undefined).split('?')[0];
-    if (!b.includes('@')) b = b64d(b);
-    const at = b.lastIndexOf('@');
-    let ui = decodeURIComponent(b.slice(0, at));
-    if (!ui.includes(':')) ui = b64d(ui);
-    const [method, ...pw] = ui.split(':');
-    const hp = b.slice(at + 1), i = hp.lastIndexOf(':');
-    host = hp.slice(0, i).replace(/[\[\]]/g, ''); port = +hp.slice(i + 1);
-    if (!method || !pw.length || !host || !port) throw new Error('ss');
-    if (!SS_OK.has(method.toLowerCase())) throw new Error('ss method');
-    out = { protocol: 'shadowsocks', settings: { servers: [{ address: host, port, method: method.toLowerCase(), password: pw.join(':') }] } };
-  } else {
-    const u = new URL(link), q = Object.fromEntries(u.searchParams);
-    host = u.hostname.replace(/[\[\]]/g, ''); port = +u.port;
-    if (!host || !port || !u.username) throw new Error(p);
-    const o = { ...q, type: q.headerType, service: q.serviceName, insecure: q.allowInsecure || q.insecure }; // type = тип заголовка, а не транспорт
-    const sec = (q.security || (p === 'trojan' ? 'tls' : 'none')).toLowerCase();
-    if (p === 'trojan' && sec === 'none') throw new Error('trojan without tls');
-    const st = stream((q.type || 'tcp').toLowerCase(), sec, o);
-    out = p === 'vless'
-      ? { protocol: 'vless', settings: { vnext: [{ address: host, port, users: [{ id: decodeURIComponent(u.username), encryption: 'none', flow: q.flow || undefined }] }] }, streamSettings: st }
-      : { protocol: 'trojan', settings: { servers: [{ address: host, port, password: decodeURIComponent(u.username) }] }, streamSettings: st };
-  }
-  if (badHost(host) || !(port > 0 && port < 65536)) throw new Error('host');
   return { p, h: host, o: port, n: name.slice(0, 80), c: flag(name), l: link, out };
 }
 
@@ -199,16 +189,40 @@ async function collect(prev) {
   return [...known, ...all.sort(() => Math.random() - 0.5)].slice(0, MAX_TEST);
 }
 
-// Один запрос через локальный SOCKS5 Xray. Возвращает задержку в мс только при HTTP 204, иначе null.
-async function viaProxy(port) {
+// Запрос через локальный SOCKS5 Xray. Возвращает { code, body, ms } или null при любой сетевой ошибке/таймауте.
+async function curlVia(port, url) {
   try {
-    const { stdout } = await run('curl', ['-s', '-o', '/dev/null', '--socks5-hostname', `127.0.0.1:${port}`,
-      '--connect-timeout', String(TIMEOUT), '--max-time', String(TIMEOUT), '-w', '%{http_code} %{time_total}', TEST_URL],
-      { timeout: (TIMEOUT + 2) * 1000 });
-    const [code, t] = stdout.trim().split(' ');
+    const { stdout } = await run('curl', ['-s', '-A', UA, '--socks5-hostname', `127.0.0.1:${port}`,
+      '--connect-timeout', String(TIMEOUT), '--max-time', String(TIMEOUT), '-w', '\n__%{http_code} %{time_total}', url],
+      { timeout: (TIMEOUT + 2) * 1000, maxBuffer: 1 << 20 });
+    const i = stdout.lastIndexOf('\n__');
+    if (i < 0) return null;
+    const [code, t] = stdout.slice(i + 3).trim().split(' ');
     const sec = parseFloat(String(t).replace(',', '.'));
-    return code === '204' && sec > 0 ? Math.max(1, Math.round(sec * 1000)) : null;
-  } catch { return null; } // ошибка сети, таймаут, RST: узел не рабочий
+    return sec > 0 ? { code, body: stdout.slice(0, i), ms: Math.max(1, Math.round(sec * 1000)) } : null;
+  } catch { return null; }
+}
+const traceOf = (body) => Object.fromEntries(String(body).split('\n').map((l) => l.split('=')).filter((a) => a.length >= 2)
+  .map(([k, ...v]) => [k.trim(), v.join('=').trim()]));
+const IP_RE = /^(\d{1,3}(\.\d{1,3}){3}|[0-9a-f]*:[0-9a-f:]+)$/i;
+const DIRECT_IP = await (async () => { // IP самого раннера: если через узел вернулся он, трафик шёл мимо прокси
+  try { const r = await fetch(TRACE_URL, { signal: AbortSignal.timeout(10000) }); return traceOf(await r.text()).ip || null; } catch { return null; }
+})();
+// Проверка реального интернета: HTTP 200, в теле ip= и loc=, ip выходной и не совпадает с IP раннера.
+async function trace(port) {
+  const r = await curlVia(port, TRACE_URL);
+  if (!r || r.code !== '200' || !r.body.includes('ip=') || !r.body.includes('loc=')) return null;
+  const t = traceOf(r.body);
+  if (!IP_RE.test(t.ip || '') || !/^[A-Z]{2}$/.test(t.loc || '') || badHost(t.ip)) return null;
+  if (DIRECT_IP && t.ip === DIRECT_IP) return null;
+  return { ip: t.ip, loc: t.loc, ms: r.ms };
+}
+// Доступность защищённого сервиса: без ключа API отдаёт 401 с JSON-ошибкой. 403/1020/503/таймаут = заблокирован Cloudflare/WAF.
+async function reach(port, url) {
+  const r = await curlVia(port, url);
+  if (!r || !['200', '401'].includes(r.code)) return false;
+  if (/cloudflare|cf-ray|Attention Required|error code: 1\d{3}/i.test(r.body)) return false;
+  return r.code === '200' || /"error"/.test(r.body);
 }
 const portOpen = (port) => new Promise((res) => {
   const s = nodeNet.connect(port, '127.0.0.1');
@@ -216,8 +230,9 @@ const portOpen = (port) => new Promise((res) => {
   s.once('error', () => res(false));
 });
 
-// Реальная проверка: поднимаем Xray с этим ключом и дважды делаем HTTPS-запрос через него.
-// Любой сбой (Xray не стартовал, ошибка, таймаут, код не 204) = узел сразу выбрасывается.
+// Реальная проверка: поднимаем Xray с этим ключом и делаем запросы через него.
+// Любой сбой trace (ошибка, таймаут, не 200, нет ip=/loc=, IP раннера) = узел сразу выбрасывается.
+// Результат: { ms, ip, loc, claude, openai } или null.
 async function test(n, port) {
   const cfg = path.join(tmp, `${port}.json`);
   await fs.writeFile(cfg, JSON.stringify({ log: { loglevel: 'none' },
@@ -229,29 +244,16 @@ async function test(n, port) {
     let ready = false;
     for (let i = 0; i < 60 && !exited; i++) { if (await portOpen(port)) { ready = true; break; } await sleep(50); }
     if (!ready || exited) return null; // конфиг не принят ядром
-    let best = null;
-    for (let i = 0; i < 2; i++) { // 1-й запрос прогревает соединение, 2-й подтверждает стабильность
-      const ms = await viaProxy(port);
-      if (ms === null) return null;
-      best = best === null ? ms : Math.min(best, ms);
-    }
-    return best;
+    const a = await trace(port); // 1-й запрос прогревает соединение
+    if (!a) return null;
+    const b = await trace(port); // 2-й подтверждает стабильность и даёт замер
+    if (!b) return null;
+    const [claude, openai] = await Promise.all([reach(port, AI_URLS.claude), reach(port, AI_URLS.openai)]);
+    return { ms: Math.min(a.ms, b.ms), ip: b.ip, loc: b.loc, claude, openai };
   } finally {
     x.kill('SIGKILL');
     if (!exited) await Promise.race([exitP, sleep(500)]);
     await fs.rm(cfg, { force: true });
-  }
-}
-
-async function geo(nodes) {
-  const need = nodes;
-  for (let i = 0; i < need.length; i += 100) {
-    const part = need.slice(i, i + 100);
-    try {
-      const r = await fetch('http://ip-api.com/batch?fields=countryCode,city', { method: 'POST', body: JSON.stringify(part.map((x) => x.h)), signal: AbortSignal.timeout(15000) });
-      (await r.json()).forEach((g, k) => { part[k].c = g.countryCode || part[k].c; part[k].city = g.city || ''; });
-    } catch { /* без страны */ }
-    await sleep(1500);
   }
 }
 
@@ -262,7 +264,7 @@ try { for (const [k, v] of Object.entries(JSON.parse(await fs.readFile('data/his
 const list = await collect(prev);
 let idx = 0;
 await Promise.all(Array.from({ length: PAR }, async (_, w) => {
-  while (idx < list.length) { const n = list[idx++]; n.ms = await test(n, 20000 + w); }
+  while (idx < list.length) { const n = list[idx++]; const r = await test(n, 20000 + w); Object.assign(n, r || { ms: null }); }
 }));
 
 for (const n of list) { // накопление аптайма: [проверок, успешных]
@@ -273,9 +275,9 @@ for (const n of list) { // накопление аптайма: [проверо�
 const alive = list.filter((n) => Number.isFinite(n.ms) && n.ms > 0).sort((a, b) => a.ms - b.ms);
 console.log(`tested: ${list.length}, alive: ${alive.length}`);
 if (!alive.length) { console.log('no alive nodes, keeping previous data'); process.exit(0); }
-await geo(alive);
+for (const n of alive) n.c = n.loc || n.c; // страна = страна выходного IP (из cloudflare trace)
 
-const pub = ({ out, ...n }) => ({ ...n, hl: n.p === 'vless' ? sanitizeVlessForHapp(n.l) : undefined }); // hl: ссылка для Happ
+const pub = ({ out, ms, ...n }) => ({ ...n, ping: ms, hl: n.p === 'vless' ? sanitizeVlessForHapp(n.l) : undefined }); // hl: ссылка для Happ
 await fs.mkdir('data', { recursive: true });
 await fs.writeFile('data/nodes.json', JSON.stringify({ updated: new Date().toISOString(), tested: list.length,
   nodes: alive.map(pub) }));
@@ -295,7 +297,8 @@ const write = async (name, arr) => {
 };
 await write('all', good);
 await write('reality', good.filter((x) => /[?&]security=reality/.test(x.l)));
-for (const p of ['vless', 'vmess', 'trojan', 'ss']) await write(p, good.filter((x) => x.p === p));
+await write('claude', good.filter((x) => x.claude));
+for (const p of ['vless', 'trojan']) await write(p, good.filter((x) => x.p === p));
 for (const [r, cs] of Object.entries(REGIONS)) await write(r, good.filter((x) => cs.includes(x.c)));
 for (const c of new Set(good.map((x) => x.c).filter(Boolean))) await write(c, good.filter((x) => x.c === c));
 await fs.rm(tmp, { recursive: true, force: true });
