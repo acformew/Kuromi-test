@@ -1,6 +1,7 @@
 // Сбор ключей, реальная проверка через Xray-core, замер задержки, геопривязка, генерация подписок.
 import { spawn, execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import nodeNet from 'node:net';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -20,7 +21,27 @@ const REGIONS = {
   ASIA: 'JP SG HK KR TW IN AE TH VN ID MY TR KZ'.split(' '),
   PL: ['PL'],
 };
-const MAX_TEST = 1500, PAR = 40, KEEP_DEAD = 100, MAX_SUB = 300;
+const MAX_TEST = 1500, PAR = 40, MAX_SUB = 300;
+// Жёсткая проверка: узел живой только если через него реально пришёл HTTP 204 (дважды подряд).
+const TEST_URL = 'https://www.gstatic.com/generate_204', TIMEOUT = 5; // секунд на один запрос
+const UUID = /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
+const VMESS_SEC = ['auto', 'aes-128-gcm', 'chacha20-poly1305', 'none', 'zero'];
+// Только AEAD-шифры Shadowsocks: старые потоковые (rc4-md5, aes-*-cfb и т.д.) современный Xray не поддерживает.
+const SS_OK = new Set(['aes-128-gcm', 'aes-256-gcm', 'chacha20-poly1305', 'chacha20-ietf-poly1305', 'xchacha20-poly1305',
+  'xchacha20-ietf-poly1305', '2022-blake3-aes-128-gcm', '2022-blake3-aes-256-gcm', '2022-blake3-chacha20-poly1305']);
+// Адреса localhost/LAN/служебные: через них проверка «успешна» без выхода в интернет, такие узлы отбрасываются.
+const badHost = (h) => {
+  h = String(h || '').toLowerCase();
+  if (!h || h === 'localhost' || h.endsWith('.local') || h.endsWith('.internal')) return true;
+  const v4 = h.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
+  if (v4) {
+    const [a, b, c, d] = v4.slice(1).map(Number);
+    return [a, b, c, d].some((x) => x > 255) || a === 0 || a === 10 || a === 127 || a >= 224 || (a === 169 && b === 254) ||
+      (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || (a === 100 && b >= 64 && b <= 127);
+  }
+  if (h.includes(':')) return h === '::' || h === '::1' || /^(fc|fd|fe80)/.test(h);
+  return !/^[a-z0-9.-]+$/.test(h);
+};
 const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'x-'));
 
 const b64d = (s) => {
@@ -90,10 +111,12 @@ const sanitizeVlessForHapp = (raw) => sanitizeVlessUri(raw, true);
 
 function stream(net, sec, o) {
   if (!['tcp', 'ws', 'grpc', 'httpupgrade'].includes(net)) throw new Error('transport');
+  if (!['none', 'tls', 'reality'].includes(sec)) throw new Error('security');
+  if (o.insecure === '1' || o.insecure === 'true') throw new Error('allowInsecure'); // небезопасный TLS не принимаем
   if (net === 'tcp' && o.type && o.type !== 'none') throw new Error('http header');
   const s = { network: net, security: sec };
   if (sec === 'tls') s.tlsSettings = { serverName: o.sni || o.host || undefined, fingerprint: o.fp || 'chrome',
-    alpn: o.alpn ? o.alpn.split(',') : undefined, allowInsecure: o.insecure === '1' || o.insecure === 'true' };
+    alpn: o.alpn ? o.alpn.split(',') : undefined, allowInsecure: false };
   if (sec === 'reality') s.realitySettings = { serverName: o.sni, fingerprint: o.fp || 'chrome',
     publicKey: o.pbk, shortId: o.sid || '', spiderX: o.spx || '' };
   if (net === 'ws') s.wsSettings = { path: o.path || '/', headers: o.host ? { Host: o.host } : {} };
@@ -113,9 +136,12 @@ function parse(link) {
   if (hash > -1) { try { name = decodeURIComponent(link.slice(hash + 1)); } catch { name = link.slice(hash + 1); } }
   if (p === 'vmess') {
     const j = JSON.parse(b64d(link.slice(8)));
-    if (!j.add || !j.port || !j.id) throw new Error('vmess');
-    host = j.add; port = +j.port; name = j.ps || name;
-    out = { protocol: 'vmess', settings: { vnext: [{ address: host, port, users: [{ id: j.id, alterId: +j.aid || 0, security: j.scy || 'auto' }] }] },
+    if (!j.add || !j.port || !j.id || !UUID.test(String(j.id).trim())) throw new Error('vmess');
+    if (+j.aid) throw new Error('alterId'); // legacy VMess (MD5) в актуальном Xray не работает
+    const sc = String(j.scy || 'auto').toLowerCase();
+    if (!VMESS_SEC.includes(sc)) throw new Error('vmess security');
+    host = String(j.add).trim(); port = +j.port; name = j.ps || name;
+    out = { protocol: 'vmess', settings: { vnext: [{ address: host, port, users: [{ id: String(j.id).trim(), alterId: 0, security: sc }] }] },
       streamSettings: stream(j.net || 'tcp', j.tls === 'tls' ? 'tls' : 'none',
         { sni: j.sni, host: j.host, path: j.path, service: j.path, fp: j.fp, alpn: j.alpn, type: j.type }) };
   } else if (p === 'ss') {
@@ -129,17 +155,21 @@ function parse(link) {
     const hp = b.slice(at + 1), i = hp.lastIndexOf(':');
     host = hp.slice(0, i).replace(/[\[\]]/g, ''); port = +hp.slice(i + 1);
     if (!method || !pw.length || !host || !port) throw new Error('ss');
-    out = { protocol: 'shadowsocks', settings: { servers: [{ address: host, port, method, password: pw.join(':') }] } };
+    if (!SS_OK.has(method.toLowerCase())) throw new Error('ss method');
+    out = { protocol: 'shadowsocks', settings: { servers: [{ address: host, port, method: method.toLowerCase(), password: pw.join(':') }] } };
   } else {
     const u = new URL(link), q = Object.fromEntries(u.searchParams);
     host = u.hostname.replace(/[\[\]]/g, ''); port = +u.port;
     if (!host || !port || !u.username) throw new Error(p);
-    const o = { ...q, service: q.serviceName, insecure: q.allowInsecure || q.insecure };
-    const st = stream(q.type || 'tcp', q.security || (p === 'trojan' ? 'tls' : 'none'), o);
+    const o = { ...q, type: q.headerType, service: q.serviceName, insecure: q.allowInsecure || q.insecure }; // type = тип заголовка, а не транспорт
+    const sec = (q.security || (p === 'trojan' ? 'tls' : 'none')).toLowerCase();
+    if (p === 'trojan' && sec === 'none') throw new Error('trojan without tls');
+    const st = stream((q.type || 'tcp').toLowerCase(), sec, o);
     out = p === 'vless'
       ? { protocol: 'vless', settings: { vnext: [{ address: host, port, users: [{ id: decodeURIComponent(u.username), encryption: 'none', flow: q.flow || undefined }] }] }, streamSettings: st }
       : { protocol: 'trojan', settings: { servers: [{ address: host, port, password: decodeURIComponent(u.username) }] }, streamSettings: st };
   }
+  if (badHost(host) || !(port > 0 && port < 65536)) throw new Error('host');
   return { p, h: host, o: port, n: name.slice(0, 80), c: flag(name), l: link, out };
 }
 
@@ -169,25 +199,48 @@ async function collect(prev) {
   return [...known, ...all.sort(() => Math.random() - 0.5)].slice(0, MAX_TEST);
 }
 
-// Реальная проверка: поднимаем Xray с этим ключом и делаем HTTPS-запрос через него.
+// Один запрос через локальный SOCKS5 Xray. Возвращает задержку в мс только при HTTP 204, иначе null.
+async function viaProxy(port) {
+  try {
+    const { stdout } = await run('curl', ['-s', '-o', '/dev/null', '--socks5-hostname', `127.0.0.1:${port}`,
+      '--connect-timeout', String(TIMEOUT), '--max-time', String(TIMEOUT), '-w', '%{http_code} %{time_total}', TEST_URL],
+      { timeout: (TIMEOUT + 2) * 1000 });
+    const [code, t] = stdout.trim().split(' ');
+    const sec = parseFloat(String(t).replace(',', '.'));
+    return code === '204' && sec > 0 ? Math.max(1, Math.round(sec * 1000)) : null;
+  } catch { return null; } // ошибка сети, таймаут, RST: узел не рабочий
+}
+const portOpen = (port) => new Promise((res) => {
+  const s = nodeNet.connect(port, '127.0.0.1');
+  s.once('connect', () => { s.destroy(); res(true); });
+  s.once('error', () => res(false));
+});
+
+// Реальная проверка: поднимаем Xray с этим ключом и дважды делаем HTTPS-запрос через него.
+// Любой сбой (Xray не стартовал, ошибка, таймаут, код не 204) = узел сразу выбрасывается.
 async function test(n, port) {
   const cfg = path.join(tmp, `${port}.json`);
   await fs.writeFile(cfg, JSON.stringify({ log: { loglevel: 'none' },
     inbounds: [{ listen: '127.0.0.1', port, protocol: 'socks', settings: { udp: false } }], outbounds: [n.out] }));
   const x = spawn('./bin/xray', ['run', '-c', cfg], { stdio: 'ignore' });
-  let best = null;
+  let exited = false;
+  const exitP = new Promise((r) => { x.once('exit', () => { exited = true; r(); }); x.once('error', () => { exited = true; r(); }); });
   try {
-    await sleep(700);
-    for (let i = 0; i < 2; i++) { // 1-й запрос прогревает соединение, берём лучший из двух
-      try {
-        const { stdout } = await run('curl', ['-s', '-o', '/dev/null', '--socks5-hostname', `127.0.0.1:${port}`,
-          '--max-time', '7', '-w', '%{http_code} %{time_total}', 'https://www.gstatic.com/generate_204']);
-        const [code, t] = stdout.split(' ');
-        if (code === '204') { const ms = Math.max(1, Math.round(+t * 1000)); best = best === null ? ms : Math.min(best, ms); }
-      } catch { /* таймаут или отказ = не рабочий */ }
+    let ready = false;
+    for (let i = 0; i < 60 && !exited; i++) { if (await portOpen(port)) { ready = true; break; } await sleep(50); }
+    if (!ready || exited) return null; // конфиг не принят ядром
+    let best = null;
+    for (let i = 0; i < 2; i++) { // 1-й запрос прогревает соединение, 2-й подтверждает стабильность
+      const ms = await viaProxy(port);
+      if (ms === null) return null;
+      best = best === null ? ms : Math.min(best, ms);
     }
-  } finally { x.kill('SIGKILL'); await sleep(60); }
-  return best;
+    return best;
+  } finally {
+    x.kill('SIGKILL');
+    if (!exited) await Promise.race([exitP, sleep(500)]);
+    await fs.rm(cfg, { force: true });
+  }
 }
 
 async function geo(nodes) {
@@ -195,7 +248,7 @@ async function geo(nodes) {
   for (let i = 0; i < need.length; i += 100) {
     const part = need.slice(i, i + 100);
     try {
-      const r = await fetch('http://ip-api.com/batch?fields=countryCode,city', { method: 'POST', body: JSON.stringify(part.map((x) => x.h)) });
+      const r = await fetch('http://ip-api.com/batch?fields=countryCode,city', { method: 'POST', body: JSON.stringify(part.map((x) => x.h)), signal: AbortSignal.timeout(15000) });
       (await r.json()).forEach((g, k) => { part[k].c = g.countryCode || part[k].c; part[k].city = g.city || ''; });
     } catch { /* без страны */ }
     await sleep(1500);
@@ -204,6 +257,8 @@ async function geo(nodes) {
 
 const prev = new Map();
 try { for (const x of JSON.parse(await fs.readFile('data/nodes.json', 'utf8')).nodes) prev.set(`${x.h}:${x.o}`, x); } catch { /* первого запуска ещё не было */ }
+const hist = new Map(); // счётчики аптайма [проверок, успешных]; хранятся отдельно, в nodes.json мёртвых нет
+try { for (const [k, v] of Object.entries(JSON.parse(await fs.readFile('data/history.json', 'utf8')))) hist.set(k, v); } catch { /* нет истории */ }
 const list = await collect(prev);
 let idx = 0;
 await Promise.all(Array.from({ length: PAR }, async (_, w) => {
@@ -211,19 +266,20 @@ await Promise.all(Array.from({ length: PAR }, async (_, w) => {
 }));
 
 for (const n of list) { // накопление аптайма: [проверок, успешных]
-  const o = prev.get(`${n.h}:${n.o}`);
-  n.u = [((o && o.u && o.u[0]) || 0) + 1, ((o && o.u && o.u[1]) || 0) + (n.ms !== null ? 1 : 0)];
+  const k = `${n.h}:${n.o}`, o = hist.get(k) || (prev.get(k) || {}).u || [0, 0];
+  n.u = [o[0] + 1, o[1] + (Number.isFinite(n.ms) && n.ms > 0 ? 1 : 0)];
 }
-const alive = list.filter((n) => n.ms !== null).sort((a, b) => a.ms - b.ms);
-const dead = list.filter((n) => n.ms === null).slice(0, KEEP_DEAD);
+// Только узлы с реальной задержкой. Мёртвые не сохраняются нигде (KEEP_DEAD = 0).
+const alive = list.filter((n) => Number.isFinite(n.ms) && n.ms > 0).sort((a, b) => a.ms - b.ms);
 console.log(`tested: ${list.length}, alive: ${alive.length}`);
 if (!alive.length) { console.log('no alive nodes, keeping previous data'); process.exit(0); }
 await geo(alive);
 
-const pub = ({ out, ...n }) => n;
+const pub = ({ out, ...n }) => ({ ...n, hl: n.p === 'vless' ? sanitizeVlessForHapp(n.l) : undefined }); // hl: ссылка для Happ
 await fs.mkdir('data', { recursive: true });
 await fs.writeFile('data/nodes.json', JSON.stringify({ updated: new Date().toISOString(), tested: list.length,
-  nodes: [...alive, ...dead].map(pub) }));
+  nodes: alive.map(pub) }));
+await fs.writeFile('data/history.json', JSON.stringify(Object.fromEntries(list.map((n) => [`${n.h}:${n.o}`, n.u]))));
 
 await fs.rm('sub', { recursive: true, force: true });
 await fs.mkdir('sub', { recursive: true });
@@ -242,3 +298,4 @@ await write('reality', good.filter((x) => /[?&]security=reality/.test(x.l)));
 for (const p of ['vless', 'vmess', 'trojan', 'ss']) await write(p, good.filter((x) => x.p === p));
 for (const [r, cs] of Object.entries(REGIONS)) await write(r, good.filter((x) => cs.includes(x.c)));
 for (const c of new Set(good.map((x) => x.c).filter(Boolean))) await write(c, good.filter((x) => x.c === c));
+await fs.rm(tmp, { recursive: true, force: true });
